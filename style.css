@@ -105,6 +105,8 @@ button:disabled { opacity: 0.6; cursor: wait; }
 
 footer { margin-top: 20px; font-size: 0.8rem; color: #999; }
 footer a { color: #2196F3; text-decoration: none; }
+footer a.dev { color: #1877F2; font-weight: bold; white-space: nowrap; }
+footer svg.fb { width: 14px; height: 14px; fill: #1877F2; vertical-align: -2px; margin-right: 2px; }
 
 #toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);

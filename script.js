@@ -1,4 +1,4 @@
-/* Free QR Generator Pro — qr-code-styling + wifi/vcard + history + bulk */
+/* Free QR Generator — qr-code-styling + wifi/vcard + history + bulk */
 let logoDataUrl = "";
 let qrType = "text";
 let currentPayload = "https://github.com/afnan-samin/free_qr";
@@ -6,6 +6,7 @@ const HIST_KEY = "freeqr_history_v1";
 const HIST_MAX = 20;
 
 const $ = (id) => document.getElementById(id);
+const TYPE_LABEL = { text: "Link", wifi: "WiFi", vcard: "Contact" };
 
 function toast(msg) {
   const t = $("toast");
@@ -46,12 +47,12 @@ function escWifi(s) {
 function buildPayload() {
   if (qrType === "wifi") {
     const ssid = $("wifi-ssid").value.trim();
-    let pass = $("wifi-pass").value;
+    const pass = $("wifi-pass").value;
     const enc = $("wifi-enc").value;
     const hidden = $("wifi-hidden").checked ? "true" : "false";
-    if (!ssid) return { error: "WiFi Name (SSID) dao" };
+    if (!ssid) return { error: "Please enter the WiFi name" };
     if (enc === "nopass") return { data: `WIFI:T:nopass;S:${escWifi(ssid)};H:${hidden};;`, label: "WiFi: " + ssid };
-    if (!pass) return { error: "WiFi password dao (na thakle Open select koro)" };
+    if (!pass) return { error: "Please enter the WiFi password (or choose No password)" };
     return { data: `WIFI:T:${enc};S:${escWifi(ssid)};P:${escWifi(pass)};H:${hidden};;`, label: "WiFi: " + ssid };
   }
   if (qrType === "vcard") {
@@ -61,18 +62,18 @@ function buildPayload() {
     const org = $("vc-org").value.trim();
     const url = $("vc-url").value.trim();
     const addr = $("vc-addr").value.trim();
-    if (!name) return { error: "vCard-er jonno Name lagbe" };
-    if (!phone) return { error: "vCard-er jonno Phone lagbe" };
+    if (!name) return { error: "Please enter a name for the contact card" };
+    if (!phone) return { error: "Please enter a phone number for the contact card" };
     const v = ["BEGIN:VCARD", "VERSION:3.0", `FN:${name}`, `TEL;TYPE=CELL:${phone}`];
     if (email) v.push(`EMAIL:${email}`);
     if (org) v.push(`ORG:${org}`);
     if (url) v.push(`URL:${url}`);
     if (addr) v.push(`ADR:;;${addr};;;;`);
     v.push("END:VCARD");
-    return { data: v.join("\n"), label: "vCard: " + name };
+    return { data: v.join("\n"), label: "Contact: " + name };
   }
   const t = $("qr-text").value.trim();
-  if (!t) return { error: "Age text / link likhun" };
+  if (!t) return { error: "Please type a link or some text first" };
   return { data: t, label: t.length > 42 ? t.slice(0, 42) + "…" : t };
 }
 
@@ -88,7 +89,7 @@ function generateQR(silent) {
   const bg = $("qr-bg").value;
   const style = $("qr-style").value;
   if (color.toLowerCase() === bg.toLowerCase()) {
-    toast("QR color ar background same — scan hobe na!");
+    toast("QR color and background are the same — it won't scan!");
     return false;
   }
   qrCode.update({
@@ -104,7 +105,7 @@ function generateQR(silent) {
     ? currentPayload.slice(0, 90) + "…" : currentPayload;
   if (!silent) {
     saveHistory(built.label, currentPayload);
-    toast("QR ready ✅");
+    toast("QR code is ready");
   }
   return true;
 }
@@ -126,16 +127,16 @@ $("qr-size").addEventListener("change", () => {
 $("qr-logo").addEventListener("change", (e) => {
   const f = e.target.files[0];
   if (!f) return;
-  if (!/^image\//.test(f.type)) { toast("Image file dao (PNG/JPG/SVG)"); return; }
-  if (f.size > 2 * 1024 * 1024) { toast("Logo 2MB er moddhe rakho (square PNG best)"); return; }
+  if (!/^image\//.test(f.type)) { toast("Please choose an image file (PNG/JPG/SVG)"); return; }
+  if (f.size > 2 * 1024 * 1024) { toast("Please keep the logo under 2MB (square PNG works best)"); return; }
   const r = new FileReader();
   r.onload = (ev) => {
     logoDataUrl = ev.target.result;
     $("btn-remove-logo").classList.remove("hidden");
     generateQR(true);
-    toast("Logo added ✅");
+    toast("Logo added");
   };
-  r.onerror = () => toast("Logo read failed");
+  r.onerror = () => toast("Could not read the logo file");
   r.readAsDataURL(f);
 });
 function removeLogo() {
@@ -147,7 +148,7 @@ function removeLogo() {
 
 /* ---------- downloads ---------- */
 async function downloadQR(ext) {
-  if (!generateQR(true)) { toast("Age valid QR banao"); return; }
+  if (!generateQR(true)) { toast("Please make a valid QR code first"); return; }
   const size = qrCode._exportSize || 512;
   const name = "qr-" + Date.now();
   try {
@@ -166,13 +167,13 @@ async function downloadQR(ext) {
       pdf.text(window.location.href, (size + 40) / 2, size + 72, { align: "center" });
       pdf.save(name + ".pdf");
       URL.revokeObjectURL(url);
-      toast("PDF downloaded ✅");
+      toast("PDF downloaded");
       return;
     }
     await qrCode.download({ name, extension: ext });
     const b = buildPayload();
     if (!b.error) saveHistory(b.label, currentPayload);
-    toast(ext.toUpperCase() + " downloaded ✅");
+    toast(ext.toUpperCase() + " downloaded");
   } catch (e) { toast("Download failed: " + e.message); }
 }
 
@@ -191,13 +192,13 @@ function parseLines(text) {
 }
 function refreshCount() {
   const n = parseLines($("bulk-text").value).length;
-  $("bulk-count").textContent = n + " lines detected" + (n > 200 ? " (max 200 nibo)" : "");
+  $("bulk-count").textContent = n + (n === 1 ? " line" : " lines") + (n > 200 ? " (using the first 200)" : "");
 }
 $("bulk-text").addEventListener("input", refreshCount);
 $("bulk-file").addEventListener("change", (e) => {
   const f = e.target.files[0];
   if (!f) return;
-  if (f.size > 2 * 1024 * 1024) { toast("File 2MB er moddhe rakho"); return; }
+  if (f.size > 2 * 1024 * 1024) { toast("Please keep the file under 2MB"); return; }
   const r = new FileReader();
   r.onload = (ev) => {
     let txt = String(ev.target.result || "");
@@ -206,7 +207,7 @@ $("bulk-file").addEventListener("change", (e) => {
     }
     $("bulk-text").value = txt;
     refreshCount();
-    toast("File loaded ✅");
+    toast("File loaded");
   };
   r.readAsText(f);
 });
@@ -216,11 +217,11 @@ function safeName(s, i) {
 }
 async function generateBulk() {
   let lines = parseLines($("bulk-text").value);
-  if (!lines.length) { toast("CSV/TXT upload ba paste koro (1 line = 1 QR)"); return; }
+  if (!lines.length) { toast("Upload a file or type a list first (one per line)"); return; }
   if (lines.length > 200) lines = lines.slice(0, 200);
   const color = $("qr-color").value, bg = $("qr-bg").value, style = $("qr-style").value;
   const btn = $("btn-bulk");
-  btn.disabled = true; btn.textContent = "⏳ Making ZIP...";
+  btn.disabled = true; btn.textContent = "Making ZIP, please wait...";
   const wrap = $("bulk-progress-wrap"), bar = $("bulk-progress");
   wrap.classList.remove("hidden");
   try {
@@ -240,10 +241,10 @@ async function generateBulk() {
     }
     const out = await zip.generateAsync({ type: "blob" });
     saveAs(out, "bulk-qr-" + Date.now() + ".zip");
-    toast(lines.length + " ta QR ZIP done 🎉");
+    toast(lines.length + " QR codes downloaded as ZIP");
   } catch (e) { toast("Bulk failed: " + e.message); }
   wrap.classList.add("hidden"); bar.style.width = "0%";
-  btn.disabled = false; btn.textContent = "📦 Generate ZIP (PNG)";
+  btn.disabled = false; btn.textContent = "Download all as ZIP";
 }
 
 /* ---------- history ---------- */
@@ -265,7 +266,7 @@ function renderHistory() {
   $("hist-badge").textContent = h.length;
   const box = $("history-list");
   if (!h.length) {
-    box.innerHTML = '<p class="empty">Ekhono history nai — ekta QR banao 👆</p>';
+    box.innerHTML = '<p class="empty">Nothing here yet — make your first QR code above.</p>';
     return;
   }
   box.innerHTML = "";
@@ -274,18 +275,17 @@ function renderHistory() {
     d.className = "hist-item";
     const date = new Date(x.time).toLocaleString();
     d.innerHTML = `<div class="hist-meta"><b></b><small></small></div>
-      <div class="hist-actions"><button>Load</button><button class="del">✕</button></div>`;
+      <div class="hist-actions"><button>Open</button><button class="del">X</button></div>`;
     d.querySelector("b").textContent = x.label;
-    d.querySelector("small").textContent = (x.type || "text") + " • " + date;
+    d.querySelector("small").textContent = (TYPE_LABEL[x.type] || "Link") + " • " + date;
     d.querySelector("button").onclick = () => {
       if (x.type && x.type !== qrType) setType(x.type);
-      if (x.type === "text") $("qr-text").value = x.data.length < 200 ? x.data : "";
-      // wifi/vcard payload direct set
+      if (x.type === "text" || !x.type) $("qr-text").value = x.data.length < 200 ? x.data : "";
       currentPayload = x.data;
       qrCode.update({ data: currentPayload });
       $("qr-payload").textContent = x.data.slice(0, 90);
       switchTab("single");
-      toast("History loaded ✅");
+      toast("Loaded from history");
     };
     d.querySelector(".del").onclick = () => {
       const nh = getHistory(); nh.splice(i, 1);

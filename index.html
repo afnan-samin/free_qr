@@ -1,24 +1,24 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Free QR Generator — Text, WiFi, vCard | Afnan Samin</title>
-  <meta name="description" content="Free QR banao: Link, WiFi password, visiting card. Download PNG/JPG/SVG/PDF. Ekdom free, signup lage na." />
+  <title>Free QR Generator — Links, WiFi, Contact Cards | Afnan Samin</title>
+  <meta name="description" content="Create free QR codes: links, WiFi passwords, contact cards. Download as PNG, JPG, SVG or PDF. No signup needed." />
   <meta name="theme-color" content="#4CAF50" />
   <meta property="og:title" content="Free QR Generator" />
-  <meta property="og:description" content="Link • WiFi • Visiting Card — QR banao free-te, download koro" />
+  <meta property="og:description" content="Links, WiFi, Contact Cards — make a QR code for free and download it" />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234CAF50'/><rect x='15' y='15' width='30' height='30' fill='white'/><rect x='55' y='15' width='30' height='30' fill='white'/><rect x='15' y='55' width='30' height='30' fill='white'/><rect x='55' y='55' width='30' height='30' fill='white'/></svg>" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
-    <h1>⚡ QR Generator</h1>
-    <p class="subtitle">Free • Signup lage na • 3 step-e QR ready</p>
+    <h1>QR Generator</h1>
+    <p class="subtitle">Free forever. No signup. Ready in 3 steps.</p>
 
     <div class="tabs">
-      <button id="tab-single" class="tab active" onclick="switchTab('single')">QR Banaw</button>
+      <button id="tab-single" class="tab active" onclick="switchTab('single')">Make QR</button>
       <button id="tab-bulk" class="tab" onclick="switchTab('bulk')">Bulk</button>
       <button id="tab-history" class="tab" onclick="switchTab('history')">History <span id="hist-badge">0</span></button>
     </div>
@@ -26,73 +26,73 @@
     <!-- ============ SINGLE ============ -->
     <div id="panel-single">
 
-      <p class="step"><span class="step-num">1</span> Ki dhoroner QR chaw?</p>
-      <div class="type-row" role="tablist" aria-label="QR type">
-        <button class="type-pill active" data-type="text" onclick="setType('text')">🔗<br>Link / Text</button>
-        <button class="type-pill" data-type="wifi" onclick="setType('wifi')">📶<br>WiFi Password</button>
-        <button class="type-pill" data-type="vcard" onclick="setType('vcard')">👤<br>Visiting Card</button>
+      <p class="step"><span class="step-num">1</span> What kind of QR code?</p>
+      <div class="type-row" role="tablist" aria-label="QR code type">
+        <button class="type-pill active" data-type="text" onclick="setType('text')">Link / Text</button>
+        <button class="type-pill" data-type="wifi" onclick="setType('wifi')">WiFi Password</button>
+        <button class="type-pill" data-type="vcard" onclick="setType('vcard')">Contact Card</button>
       </div>
 
-      <p class="step"><span class="step-num">2</span> Tothyo daw</p>
+      <p class="step"><span class="step-num">2</span> Enter the details</p>
 
       <!-- TEXT -->
       <div id="form-text">
-        <input type="text" id="qr-text" placeholder="Link ba text likho — jemon: https://facebook.com/tomarpage" autocomplete="off" />
+        <input type="text" id="qr-text" placeholder="Type a link or any text — e.g. https://facebook.com/yourpage" autocomplete="off" />
       </div>
 
       <!-- WIFI -->
       <div id="form-wifi" class="hidden">
-        <input type="text" id="wifi-ssid" placeholder="WiFi-er naam likho *" autocomplete="off" />
-        <input type="text" id="wifi-pass" placeholder="WiFi password likho *" autocomplete="off" />
+        <input type="text" id="wifi-ssid" placeholder="WiFi name *" autocomplete="off" />
+        <input type="text" id="wifi-pass" placeholder="WiFi password *" autocomplete="off" />
         <div class="row">
           <div class="field">
-            <label>Security</label>
+            <label>Security type</label>
             <select id="wifi-enc">
-              <option value="WPA" selected>WPA/WPA2 (normal)</option>
-              <option value="WEP">WEP (purano router)</option>
-              <option value="nopass">Password nai (open)</option>
+              <option value="WPA" selected>WPA/WPA2 (usual)</option>
+              <option value="WEP">WEP (old router)</option>
+              <option value="nopass">No password (open)</option>
             </select>
           </div>
           <div class="field check">
-            <label><input type="checkbox" id="wifi-hidden" /> WiFi lukano (hidden)</label>
+            <label><input type="checkbox" id="wifi-hidden" /> Hidden network</label>
           </div>
         </div>
-        <p class="tip">📱 Keu scan korlei WiFi-te connect hoye jabe — password mone rakha lagbe na.</p>
+        <p class="tip">Anyone who scans this joins the WiFi right away — no typing needed.</p>
       </div>
 
       <!-- VCARD -->
       <div id="form-vcard" class="hidden">
-        <input type="text" id="vc-name" placeholder="Tomar naam *" autocomplete="name" />
-        <input type="text" id="vc-phone" placeholder="Mobile number *" autocomplete="tel" />
-        <input type="email" id="vc-email" placeholder="Email (thakle)" autocomplete="email" />
+        <input type="text" id="vc-name" placeholder="Full name *" autocomplete="name" />
+        <input type="text" id="vc-phone" placeholder="Phone number *" autocomplete="tel" />
+        <input type="email" id="vc-email" placeholder="Email (optional)" autocomplete="email" />
         <div class="row">
-          <div class="field"><input type="text" id="vc-org" placeholder="Dokan/Company" /></div>
-          <div class="field"><input type="text" id="vc-url" placeholder="Website (thakle)" /></div>
+          <div class="field"><input type="text" id="vc-org" placeholder="Shop / Company" /></div>
+          <div class="field"><input type="text" id="vc-url" placeholder="Website (optional)" /></div>
         </div>
-        <input type="text" id="vc-addr" placeholder="Thikana (thakle)" />
-        <p class="tip">📱 Keu scan korlei number-ta tar phone-e save korar option pabe.</p>
+        <input type="text" id="vc-addr" placeholder="Address (optional)" />
+        <p class="tip">Anyone who scans this can save your number to their phone in one tap.</p>
       </div>
 
-      <p class="step"><span class="step-num">3</span> Button chap daw</p>
-      <button class="btn-main" id="btn-generate" onclick="generateQR()">✨ QR Banao</button>
+      <p class="step"><span class="step-num">3</span> Press the button</p>
+      <button class="btn-main" id="btn-generate" onclick="generateQR()">Generate QR Code</button>
 
       <div id="qr-preview" aria-live="polite"></div>
-      <p id="qr-hint">Uporer button chapar por QR ekhane dekhabe</p>
+      <p id="qr-hint">Your QR code will appear here</p>
       <p id="qr-payload" class="payload"></p>
 
-      <p class="step"><span class="step-num">4</span> Save koro</p>
+      <p class="step"><span class="step-num">4</span> Save it</p>
       <div class="dl-grid">
-        <button onclick="downloadQR('png')">🖼 PNG <small>chobi</small></button>
-        <button onclick="downloadQR('jpeg')">🖼 JPG <small>chobi</small></button>
-        <button onclick="downloadQR('svg')">🖨 SVG <small>print</small></button>
-        <button onclick="downloadQR('pdf')">📄 PDF <small>file</small></button>
+        <button onclick="downloadQR('png')">PNG <small>image</small></button>
+        <button onclick="downloadQR('jpeg')">JPG <small>image</small></button>
+        <button onclick="downloadQR('svg')">SVG <small>print</small></button>
+        <button onclick="downloadQR('pdf')">PDF <small>file</small></button>
       </div>
 
       <details class="customize">
-        <summary>🎨 Sajaw (rong / logo / style) — dorkar hole kholo</summary>
+        <summary>Customize colors, logo and style (optional)</summary>
         <div class="row">
           <div class="field">
-            <label>QR-er rong</label>
+            <label>QR color</label>
             <input type="color" id="qr-color" value="#000000" />
           </div>
           <div class="field">
@@ -104,52 +104,52 @@
           <div class="field">
             <label>Size</label>
             <select id="qr-size">
-              <option value="256">Choto (256)</option>
-              <option value="512" selected>Normal (512)</option>
-              <option value="1024">Boro — print (1024)</option>
+              <option value="256">Small (256px)</option>
+              <option value="512" selected>Medium (512px)</option>
+              <option value="1024">Large — for print (1024px)</option>
             </select>
           </div>
           <div class="field">
             <label>Style</label>
             <select id="qr-style">
-              <option value="square">Charokona</option>
-              <option value="dots" selected>Gol dot</option>
+              <option value="square">Square</option>
+              <option value="dots" selected>Dots</option>
               <option value="rounded">Rounded</option>
-              <option value="extra-rounded">Beshi gol</option>
+              <option value="extra-rounded">Extra rounded</option>
               <option value="classy">Classy</option>
-              <option value="classy-rounded">Classy gol</option>
+              <option value="classy-rounded">Classy rounded</option>
             </select>
           </div>
         </div>
         <div class="field">
-          <label>Majhkhane logo/chobi (thakle)</label>
+          <label>Logo in the center (optional)</label>
           <input type="file" id="qr-logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
         </div>
-        <button class="btn-remove hidden" id="btn-remove-logo" onclick="removeLogo()">Logo soraw ✕</button>
+        <button class="btn-remove hidden" id="btn-remove-logo" onclick="removeLogo()">Remove logo</button>
       </details>
     </div>
 
     <!-- ============ BULK ============ -->
     <div id="panel-bulk" class="hidden">
-      <p class="step"><span class="step-num">1</span> File daw ba likho</p>
-      <p class="howto">Dokaner 100 ta product-er link? <b>.txt/.csv file</b> daw — proti line-e 1 ta link. Niche likheo dite paro.</p>
+      <p class="step"><span class="step-num">1</span> Give us the list</p>
+      <p class="howto">Have 100 product links? Upload a <b>.txt or .csv file</b> — one link per line. Or just type the list below.</p>
       <input type="file" id="bulk-file" accept=".csv,.txt" />
-      <textarea id="bulk-text" rows="5" placeholder="Proti line-e 1 ta kore likho:&#10;https://dokan.com/product-1&#10;https://dokan.com/product-2"></textarea>
-      <p id="bulk-count">0 ta line</p>
-      <p class="step"><span class="step-num">2</span> ZIP download koro</p>
+      <textarea id="bulk-text" rows="5" placeholder="One per line:&#10;https://myshop.com/product-1&#10;https://myshop.com/product-2"></textarea>
+      <p id="bulk-count">0 lines</p>
+      <p class="step"><span class="step-num">2</span> Download everything</p>
       <div class="progress hidden" id="bulk-progress-wrap"><div id="bulk-progress"></div></div>
-      <button class="btn-main" id="btn-bulk" onclick="generateBulk()">📦 Sob QR ek sathe download (ZIP)</button>
+      <button class="btn-main" id="btn-bulk" onclick="generateBulk()">Download all as ZIP</button>
     </div>
 
     <!-- ============ HISTORY ============ -->
     <div id="panel-history" class="hidden">
-      <p class="howto">Age ja ja banaicho — last <b>20 ta</b> ekhane thakbe. Chaile abar khule download korte parba.</p>
+      <p class="howto">Your last <b>20</b> QR codes are saved here in this browser. Open any of them again with one click.</p>
       <div id="history-list"></div>
-      <button class="btn-remove" id="btn-clear-hist" onclick="clearHistory()">Sob history muchhe felo</button>
+      <button class="btn-remove" id="btn-clear-hist" onclick="clearHistory()">Clear all history</button>
     </div>
 
     <footer>
-      ❤ diye banano — <b>Afnan Samin</b> • Free forever •
+      Made by <b>Afnan Samin</b> — free forever —
       <a href="https://github.com/afnan-samin/free_qr" target="_blank" rel="noopener">GitHub</a>
     </footer>
   </div>

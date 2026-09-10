@@ -1,164 +1,315 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Free QR Generator — Links, WiFi, Contact Cards | Afnan Samin</title>
-  <meta name="description" content="Create free QR codes: links, WiFi passwords, contact cards. Download as PNG, JPG, SVG or PDF. No signup needed." />
-  <meta name="theme-color" content="#4CAF50" />
-  <meta property="og:title" content="Free QR Generator" />
-  <meta property="og:description" content="Links, WiFi, Contact Cards — make a QR code for free and download it" />
-  <meta property="og:type" content="website" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234CAF50'/><rect x='15' y='15' width='30' height='30' fill='white'/><rect x='55' y='15' width='30' height='30' fill='white'/><rect x='15' y='55' width='30' height='30' fill='white'/><rect x='55' y='55' width='30' height='30' fill='white'/></svg>" />
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Free QR Generator — Links, WiFi, Contact Cards | Afnan Samin</title>
+<meta name="description" content="Create free QR codes: links, WiFi passwords, contact cards. Download as PNG, JPG, SVG or PDF. No signup needed." />
+<meta name="theme-color" content="#0B1120" />
+<meta property="og:title" content="Free QR Generator" />
+<meta property="og:description" content="Links, WiFi, Contact Cards — make a QR code for free and download it" />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2322C55E'/><rect x='15' y='15' width='30' height='30' fill='white'/><rect x='55' y='15' width='30' height='30' fill='white'/><rect x='15' y='55' width='30' height='30' fill='white'/><rect x='55' y='55' width='30' height='30' fill='white'/></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>QR Generator</h1>
-    <p class="subtitle">Free forever. No signup. Takes a few seconds.</p>
 
-    <div class="tabs">
-      <button id="tab-single" class="tab active" onclick="switchTab('single')">Make QR</button>
-      <button id="tab-bulk" class="tab" onclick="switchTab('bulk')">Bulk</button>
-      <button id="tab-history" class="tab" onclick="switchTab('history')">History <span id="hist-badge">0</span></button>
-    </div>
+<div class="bg-blobs" aria-hidden="true">
+  <span class="blob blob-a"></span>
+  <span class="blob blob-b"></span>
+  <span class="blob blob-c"></span>
+</div>
 
-    <!-- ============ SINGLE ============ -->
-    <div id="panel-single">
-
-      <p class="label">What kind of QR code?</p>
-      <div class="type-row" role="tablist" aria-label="QR code type">
-        <button class="type-pill active" data-type="text" onclick="setType('text')">Link / Text</button>
-        <button class="type-pill" data-type="wifi" onclick="setType('wifi')">WiFi Password</button>
-        <button class="type-pill" data-type="vcard" onclick="setType('vcard')">Contact Card</button>
-      </div>
-
-      <p class="label">Enter the details</p>
-
-      <!-- TEXT -->
-      <div id="form-text">
-        <input type="text" id="qr-text" placeholder="Type a link or any text — e.g. https://facebook.com/yourpage" autocomplete="off" />
-      </div>
-
-      <!-- WIFI -->
-      <div id="form-wifi" class="hidden">
-        <input type="text" id="wifi-ssid" placeholder="WiFi name *" autocomplete="off" />
-        <input type="text" id="wifi-pass" placeholder="WiFi password *" autocomplete="off" />
-        <div class="row">
-          <div class="field">
-            <label>Security type</label>
-            <select id="wifi-enc">
-              <option value="WPA" selected>WPA/WPA2 (usual)</option>
-              <option value="WEP">WEP (old router)</option>
-              <option value="nopass">No password (open)</option>
-            </select>
-          </div>
-          <div class="field check">
-            <label><input type="checkbox" id="wifi-hidden" /> Hidden network</label>
-          </div>
-        </div>
-        <p class="tip">Anyone who scans this joins the WiFi right away — no typing needed.</p>
-      </div>
-
-      <!-- VCARD -->
-      <div id="form-vcard" class="hidden">
-        <input type="text" id="vc-name" placeholder="Full name *" autocomplete="name" />
-        <input type="text" id="vc-phone" placeholder="Phone number *" autocomplete="tel" />
-        <input type="email" id="vc-email" placeholder="Email (optional)" autocomplete="email" />
-        <div class="row">
-          <div class="field"><input type="text" id="vc-org" placeholder="Shop / Company" /></div>
-          <div class="field"><input type="text" id="vc-url" placeholder="Website (optional)" /></div>
-        </div>
-        <input type="text" id="vc-addr" placeholder="Address (optional)" />
-        <p class="tip">Anyone who scans this can save your number to their phone in one tap.</p>
-      </div>
-
-      <details class="customize">
-        <summary>Customize colors, logo and style (optional)</summary>
-        <div class="row">
-          <div class="field">
-            <label>QR color</label>
-            <input type="color" id="qr-color" value="#000000" />
-          </div>
-          <div class="field">
-            <label>Background</label>
-            <input type="color" id="qr-bg" value="#ffffff" />
-          </div>
-        </div>
-        <div class="row">
-          <div class="field">
-            <label>Size</label>
-            <select id="qr-size">
-              <option value="256">Small (256px)</option>
-              <option value="512" selected>Medium (512px)</option>
-              <option value="1024">Large — for print (1024px)</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Style</label>
-            <select id="qr-style">
-              <option value="square">Square</option>
-              <option value="dots" selected>Dots</option>
-              <option value="rounded">Rounded</option>
-              <option value="extra-rounded">Extra rounded</option>
-              <option value="classy">Classy</option>
-              <option value="classy-rounded">Classy rounded</option>
-            </select>
-          </div>
-        </div>
-        <div class="field">
-          <label>Logo in the center (optional)</label>
-          <input type="file" id="qr-logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
-        </div>
-        <button class="btn-remove hidden" id="btn-remove-logo" onclick="removeLogo()">Remove logo</button>
-      </details>
-
-      <button class="btn-main" id="btn-generate" onclick="generateQR()">Generate QR Code</button>
-
-      <div id="qr-preview" aria-live="polite"></div>
-      <p id="qr-hint">Your QR code will appear here</p>
-      <p id="qr-payload" class="payload"></p>
-
-      <p class="label">Save it</p>
-      <div class="dl-grid">
-        <button onclick="downloadQR('png')">PNG <small>image</small></button>
-        <button onclick="downloadQR('jpeg')">JPG <small>image</small></button>
-        <button onclick="downloadQR('svg')">SVG <small>print</small></button>
-        <button onclick="downloadQR('pdf')">PDF <small>file</small></button>
-      </div>
-    </div>
-
-    <!-- ============ BULK ============ -->
-    <div id="panel-bulk" class="hidden">
-      <p class="label">Give us the list</p>
-      <p class="howto">Have 100 product links? Upload a <b>.txt or .csv file</b> — one link per line. Or just type the list below.</p>
-      <input type="file" id="bulk-file" accept=".csv,.txt" />
-      <textarea id="bulk-text" rows="5" placeholder="One per line:&#10;https://myshop.com/product-1&#10;https://myshop.com/product-2"></textarea>
-      <p id="bulk-count">0 lines</p>
-      <p class="label">Download everything</p>
-      <div class="progress hidden" id="bulk-progress-wrap"><div id="bulk-progress"></div></div>
-      <button class="btn-main" id="btn-bulk" onclick="generateBulk()">Download all as ZIP</button>
-    </div>
-
-    <!-- ============ HISTORY ============ -->
-    <div id="panel-history" class="hidden">
-      <p class="howto">Your last <b>20</b> QR codes are saved here in this browser. Open any of them again with one click.</p>
-      <div id="history-list"></div>
-      <button class="btn-remove" id="btn-clear-hist" onclick="clearHistory()">Clear all history</button>
-    </div>
-
-    <footer>
-      Developed by <a class="dev" href="https://www.facebook.com/developer.bap" target="_blank" rel="noopener"><svg class="fb" viewBox="0 0 24 24" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg> Afnan Samin</a> — free forever —
+<!-- ============ HEADER ============ -->
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="#top" class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+      </span>
+      Free QR
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="#generator">Generator</a>
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
       <a href="https://github.com/afnan-samin/free_qr" target="_blank" rel="noopener">GitHub</a>
-    </footer>
+    </nav>
+    <a class="btn-nav-cta" href="#generator">Make a QR code</a>
   </div>
+</header>
 
-  <div id="toast" role="status"></div>
+<main id="top">
 
-  <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="script.js"></script>
+  <!-- ============ HERO ============ -->
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <p class="eyebrow">Free forever &middot; no signup</p>
+      <h1>Turn any link into a scannable QR code in seconds.</h1>
+      <p class="hero-sub">Links, WiFi passwords and contact cards — styled, logo&#8209;branded and exported in print&#8209;ready resolution. Nothing leaves your browser.</p>
+      <div class="hero-actions">
+        <a href="#generator" class="btn-main btn-hero">Start generating</a>
+        <a href="#how" class="btn-ghost">See how it works</a>
+      </div>
+      <div class="hero-stats">
+        <div><strong>4</strong><span>export formats</span></div>
+        <div><strong>200</strong><span>bulk codes at once</span></div>
+        <div><strong>0&#65039;&#8320;</strong><span>tracking, ever</span></div>
+      </div>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <div class="floating-card card-code">
+        <div class="mini-qr">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="floating-card card-format">PDF &middot; print ready</div>
+      <div class="floating-card card-wifi">Wi&#8209;Fi tap &amp; join</div>
+    </div>
+  </section>
+
+  <!-- ============ GENERATOR APP ============ -->
+  <section id="generator" class="generator-section wrap">
+    <div class="container glass-panel">
+
+      <p class="subtitle">Free forever. No signup. Takes a few seconds.</p>
+
+      <div class="tabs">
+        <button id="tab-single" class="tab active" onclick="switchTab('single')">Make QR</button>
+        <button id="tab-bulk" class="tab" onclick="switchTab('bulk')">Bulk</button>
+        <button id="tab-history" class="tab" onclick="switchTab('history')">History <span id="hist-badge">0</span></button>
+      </div>
+
+      <!-- ============ SINGLE ============ -->
+      <div id="panel-single">
+
+        <p class="label">What kind of QR code?</p>
+        <div class="type-row" role="tablist" aria-label="QR code type">
+          <button class="type-pill active" data-type="text" onclick="setType('text')">Link / Text</button>
+          <button class="type-pill" data-type="wifi" onclick="setType('wifi')">WiFi Password</button>
+          <button class="type-pill" data-type="vcard" onclick="setType('vcard')">Contact Card</button>
+        </div>
+
+        <p class="label">Enter the details</p>
+
+        <!-- TEXT -->
+        <div id="form-text">
+          <input type="text" id="qr-text" placeholder="Type a link or any text — e.g. https://facebook.com/yourpage" autocomplete="off" />
+        </div>
+
+        <!-- WIFI -->
+        <div id="form-wifi" class="hidden">
+          <input type="text" id="wifi-ssid" placeholder="WiFi name *" autocomplete="off" />
+          <input type="text" id="wifi-pass" placeholder="WiFi password *" autocomplete="off" />
+          <div class="row">
+            <div class="field">
+              <label>Security type</label>
+              <select id="wifi-enc">
+                <option value="WPA" selected>WPA/WPA2 (usual)</option>
+                <option value="WEP">WEP (old router)</option>
+                <option value="nopass">No password (open)</option>
+              </select>
+            </div>
+            <div class="field check">
+              <label><input type="checkbox" id="wifi-hidden" /> Hidden network</label>
+            </div>
+          </div>
+          <p class="tip">Anyone who scans this joins the WiFi right away — no typing needed.</p>
+        </div>
+
+        <!-- VCARD -->
+        <div id="form-vcard" class="hidden">
+          <input type="text" id="vc-name" placeholder="Full name *" autocomplete="name" />
+          <input type="text" id="vc-phone" placeholder="Phone number *" autocomplete="tel" />
+          <input type="email" id="vc-email" placeholder="Email (optional)" autocomplete="email" />
+          <div class="row">
+            <div class="field"><input type="text" id="vc-org" placeholder="Shop / Company" /></div>
+            <div class="field"><input type="text" id="vc-url" placeholder="Website (optional)" /></div>
+          </div>
+          <input type="text" id="vc-addr" placeholder="Address (optional)" />
+          <p class="tip">Anyone who scans this can save your number to their phone in one tap.</p>
+        </div>
+
+        <details class="customize">
+          <summary>Customize colors, logo and style (optional)</summary>
+
+          <div class="row row-colors">
+            <div class="field color-field">
+              <label>QR color</label>
+              <div class="color-swatch-wrap">
+                <input type="color" id="qr-color" value="#000000"
+                  oninput="document.getElementById('qr-color-hex').textContent=this.value" />
+                <span class="hex-label" id="qr-color-hex">#000000</span>
+              </div>
+            </div>
+            <div class="field color-field">
+              <label>Background</label>
+              <div class="color-swatch-wrap">
+                <input type="color" id="qr-bg" value="#ffffff"
+                  oninput="document.getElementById('qr-bg-hex').textContent=this.value" />
+                <span class="hex-label" id="qr-bg-hex">#ffffff</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Size</label>
+              <select id="qr-size">
+                <option value="256">Small (256px)</option>
+                <option value="512" selected>Medium (512px)</option>
+                <option value="1024">Large — for print (1024px)</option>
+                <option value="2048">Ultra HD — for large print (2048px)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Style</label>
+              <select id="qr-style">
+                <option value="square">Square</option>
+                <option value="dots" selected>Dots</option>
+                <option value="rounded">Rounded</option>
+                <option value="extra-rounded">Extra rounded</option>
+                <option value="classy">Classy</option>
+                <option value="classy-rounded">Classy rounded</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Logo in the center (optional)</label>
+            <input type="file" id="qr-logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
+          </div>
+          <button class="btn-remove hidden" id="btn-remove-logo" onclick="removeLogo()">Remove logo</button>
+        </details>
+
+        <button class="btn-main" id="btn-generate" onclick="generateQR()">Generate QR Code</button>
+
+        <div id="qr-preview" aria-live="polite"></div>
+        <p id="qr-hint">Your QR code will appear here</p>
+        <p id="qr-payload" class="payload"></p>
+
+        <p class="label">Save it</p>
+        <div class="dl-grid">
+          <button onclick="downloadQR('png')">PNG <small>image</small></button>
+          <button onclick="downloadQR('jpeg')">JPG <small>image</small></button>
+          <button onclick="downloadQR('svg')">SVG <small>print</small></button>
+          <button onclick="downloadQR('pdf')">PDF <small>file</small></button>
+        </div>
+      </div>
+
+      <!-- ============ BULK ============ -->
+      <div id="panel-bulk" class="hidden">
+        <p class="label">Give us the list</p>
+        <p class="howto">Have 100 product links? Upload a <b>.txt or .csv file</b> — one link per line. Or just type the list below.</p>
+        <input type="file" id="bulk-file" accept=".csv,.txt" />
+        <textarea id="bulk-text" rows="5" placeholder="One per line:&#10;https://myshop.com/product-1&#10;https://myshop.com/product-2"></textarea>
+        <p id="bulk-count">0 lines</p>
+        <p class="label">Download everything</p>
+        <div class="progress hidden" id="bulk-progress-wrap"><div id="bulk-progress"></div></div>
+        <button class="btn-main" id="btn-bulk" onclick="generateBulk()">Download all as ZIP</button>
+      </div>
+
+      <!-- ============ HISTORY ============ -->
+      <div id="panel-history" class="hidden">
+        <p class="howto">Your last <b>20</b> QR codes are saved here in this browser. Open any of them again with one click.</p>
+        <div id="history-list"></div>
+        <button class="btn-remove" id="btn-clear-hist" onclick="clearHistory()">Clear all history</button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ FEATURES ============ -->
+  <section id="features" class="features wrap">
+    <h2>Everything a shop, event or resume needs</h2>
+    <div class="feature-grid">
+      <div class="glass-card">
+        <h3>Three code types</h3>
+        <p>Links and text, WiFi credentials, or a full contact card — pick the type and fill in only what's needed.</p>
+      </div>
+      <div class="glass-card">
+        <h3>Logo &amp; styling</h3>
+        <p>Drop your logo in the center, pick dot styles and colors, and keep the code on&#8209;brand.</p>
+      </div>
+      <div class="glass-card">
+        <h3>Print&#8209;ready export</h3>
+        <p>Download as PNG, JPG, SVG or PDF up to 2048px, sharp enough for banners and packaging.</p>
+      </div>
+      <div class="glass-card">
+        <h3>Bulk generation</h3>
+        <p>Upload a CSV or paste up to 200 links and get every QR code back as a single ZIP.</p>
+      </div>
+      <div class="glass-card">
+        <h3>Local history</h3>
+        <p>Your last 20 codes stay saved in this browser only, so you can reopen them anytime.</p>
+      </div>
+      <div class="glass-card">
+        <h3>No signup, no server</h3>
+        <p>Everything runs client&#8209;side. Nothing you type is ever uploaded or stored remotely.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section id="how" class="how wrap">
+    <h2>How it works</h2>
+    <div class="how-grid">
+      <div class="how-step">
+        <span class="how-num">1</span>
+        <h3>Choose a type</h3>
+        <p>Link, WiFi or contact card — whatever you need scanned.</p>
+      </div>
+      <div class="how-step">
+        <span class="how-num">2</span>
+        <h3>Style it</h3>
+        <p>Set colors, dot style and an optional logo, or skip straight to generating.</p>
+      </div>
+      <div class="how-step">
+        <span class="how-num">3</span>
+        <h3>Download &amp; use</h3>
+        <p>Grab PNG, JPG, SVG or PDF and print it, share it or paste it anywhere.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+      <div>
+        <p class="footer-title">Free QR Generator</p>
+        <p class="footer-tagline">Free forever. No signup. No tracking.</p>
+      </div>
+    </div>
+    <div class="footer-links">
+      <a href="#generator">Generator</a>
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="https://github.com/afnan-samin/free_qr" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <a class="dev" href="https://www.facebook.com/developer.bap" target="_blank" rel="noopener">
+      <svg class="fb" viewBox="0 0 24 24" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      Developed by Afnan Samin
+    </a>
+  </div>
+</footer>
+
+<div id="toast" role="status"></div>
+
+<script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="script.js"></script>
 </body>
 </html>

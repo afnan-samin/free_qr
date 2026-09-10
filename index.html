@@ -15,7 +15,7 @@
 <body>
   <div class="container">
     <h1>QR Generator</h1>
-    <p class="subtitle">Free forever. No signup. Ready in 3 steps.</p>
+    <p class="subtitle">Free forever. No signup. Takes a few seconds.</p>
 
     <div class="tabs">
       <button id="tab-single" class="tab active" onclick="switchTab('single')">Make QR</button>
@@ -26,14 +26,14 @@
     <!-- ============ SINGLE ============ -->
     <div id="panel-single">
 
-      <p class="step"><span class="step-num">1</span> What kind of QR code?</p>
+      <p class="label">What kind of QR code?</p>
       <div class="type-row" role="tablist" aria-label="QR code type">
         <button class="type-pill active" data-type="text" onclick="setType('text')">Link / Text</button>
         <button class="type-pill" data-type="wifi" onclick="setType('wifi')">WiFi Password</button>
         <button class="type-pill" data-type="vcard" onclick="setType('vcard')">Contact Card</button>
       </div>
 
-      <p class="step"><span class="step-num">2</span> Enter the details</p>
+      <p class="label">Enter the details</p>
 
       <!-- TEXT -->
       <div id="form-text">
@@ -71,21 +71,6 @@
         </div>
         <input type="text" id="vc-addr" placeholder="Address (optional)" />
         <p class="tip">Anyone who scans this can save your number to their phone in one tap.</p>
-      </div>
-
-      <p class="step"><span class="step-num">3</span> Press the button</p>
-      <button class="btn-main" id="btn-generate" onclick="generateQR()">Generate QR Code</button>
-
-      <div id="qr-preview" aria-live="polite"></div>
-      <p id="qr-hint">Your QR code will appear here</p>
-      <p id="qr-payload" class="payload"></p>
-
-      <p class="step"><span class="step-num">4</span> Save it</p>
-      <div class="dl-grid">
-        <button onclick="downloadQR('png')">PNG <small>image</small></button>
-        <button onclick="downloadQR('jpeg')">JPG <small>image</small></button>
-        <button onclick="downloadQR('svg')">SVG <small>print</small></button>
-        <button onclick="downloadQR('pdf')">PDF <small>file</small></button>
       </div>
 
       <details class="customize">
@@ -127,16 +112,30 @@
         </div>
         <button class="btn-remove hidden" id="btn-remove-logo" onclick="removeLogo()">Remove logo</button>
       </details>
+
+      <button class="btn-main" id="btn-generate" onclick="generateQR()">Generate QR Code</button>
+
+      <div id="qr-preview" aria-live="polite"></div>
+      <p id="qr-hint">Your QR code will appear here</p>
+      <p id="qr-payload" class="payload"></p>
+
+      <p class="label">Save it</p>
+      <div class="dl-grid">
+        <button onclick="downloadQR('png')">PNG <small>image</small></button>
+        <button onclick="downloadQR('jpeg')">JPG <small>image</small></button>
+        <button onclick="downloadQR('svg')">SVG <small>print</small></button>
+        <button onclick="downloadQR('pdf')">PDF <small>file</small></button>
+      </div>
     </div>
 
     <!-- ============ BULK ============ -->
     <div id="panel-bulk" class="hidden">
-      <p class="step"><span class="step-num">1</span> Give us the list</p>
+      <p class="label">Give us the list</p>
       <p class="howto">Have 100 product links? Upload a <b>.txt or .csv file</b> — one link per line. Or just type the list below.</p>
       <input type="file" id="bulk-file" accept=".csv,.txt" />
       <textarea id="bulk-text" rows="5" placeholder="One per line:&#10;https://myshop.com/product-1&#10;https://myshop.com/product-2"></textarea>
       <p id="bulk-count">0 lines</p>
-      <p class="step"><span class="step-num">2</span> Download everything</p>
+      <p class="label">Download everything</p>
       <div class="progress hidden" id="bulk-progress-wrap"><div id="bulk-progress"></div></div>
       <button class="btn-main" id="btn-bulk" onclick="generateBulk()">Download all as ZIP</button>
     </div>

@@ -25,13 +25,8 @@ h3 { margin: 14px 0 8px; }
 #hist-badge { background: rgba(0,0,0,0.15); border-radius: 12px; padding: 0 7px; font-size: 0.75rem; }
 .tab.active #hist-badge { background: rgba(255,255,255,0.35); }
 
-/* Steps — 1, 2, 3 */
-.step { text-align: left; font-weight: bold; font-size: 1rem; margin: 16px 0 8px; color: #333; }
-.step-num {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 26px; height: 26px; border-radius: 50%;
-  background: #4CAF50; color: #fff; font-size: 0.85rem; margin-right: 6px;
-}
+/* Plain section labels */
+.label { text-align: left; font-weight: bold; font-size: 1rem; margin: 16px 0 8px; color: #333; }
 
 /* Type — 3 ta boro button */
 .type-row { display: flex; gap: 8px; margin-bottom: 4px; }

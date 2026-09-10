@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free QR Generator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>QR Code Generator</h1>
+    <p>Text ba Link diye QR banan</p>
+    
+    <input type="text" id="qr-text" placeholder="Link ba Text likhun..." />
+    <input type="color" id="qr-color" value="#000000" />
+    
+    <button onclick="generateQR()">QR Generate</button>
+    <button onclick="downloadQR()">JPG Download</button>
+    
+    <div id="qrcode"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

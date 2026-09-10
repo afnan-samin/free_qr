@@ -1,26 +1,159 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Free QR Generator by Afnan Samin</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Free QR Generator Pro — Text, WiFi, vCard + Bulk | Afnan Samin</title>
+  <meta name="description" content="Free professional QR generator: Text/URL, WiFi, vCard, logo, bulk CSV→ZIP, PNG/JPG/SVG/PDF. No signup, mobile friendly, open source." />
+  <meta name="theme-color" content="#4CAF50" />
+  <meta property="og:title" content="Free QR Generator Pro" />
+  <meta property="og:description" content="Text • WiFi • vCard • Logo • Bulk ZIP • PNG/JPG/SVG/PDF — 100% free" />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234CAF50'/><rect x='15' y='15' width='30' height='30' fill='white'/><rect x='55' y='15' width='30' height='30' fill='white'/><rect x='15' y='55' width='30' height='30' fill='white'/><rect x='55' y='55' width='30' height='30' fill='white'/></svg>" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
-    <h1>QR Code Generator</h1>
-    <p>Create QR & Download for Free</p>
-    
-    <input type="text" id="qr-text" placeholder="Enter Your Text/Link Here..." />
-    <input type="color" id="qr-color" value="#000000" />
-    
-    <button onclick="generateQR()">QR Generate</button>
-    <button onclick="downloadQR()">JPG Download</button>
-    
-    <div id="qrcode"></div>
+    <h1>⚡ QR Generator <span class="badge">PRO</span></h1>
+    <p class="subtitle">Text • WiFi • vCard • Logo • Bulk ZIP • PNG/JPG/SVG/PDF</p>
+
+    <div class="tabs">
+      <button id="tab-single" class="tab active" onclick="switchTab('single')">Single QR</button>
+      <button id="tab-bulk" class="tab" onclick="switchTab('bulk')">Bulk ZIP</button>
+      <button id="tab-history" class="tab" onclick="switchTab('history')">History <span id="hist-badge">0</span></button>
+    </div>
+
+    <!-- ============ SINGLE ============ -->
+    <div id="panel-single">
+      <div class="type-row" role="tablist" aria-label="QR type">
+        <button class="type-pill active" data-type="text" onclick="setType('text')">🔗 Text/URL</button>
+        <button class="type-pill" data-type="wifi" onclick="setType('wifi')">📶 WiFi</button>
+        <button class="type-pill" data-type="vcard" onclick="setType('vcard')">👤 vCard</button>
+      </div>
+
+      <!-- TEXT -->
+      <div id="form-text">
+        <input type="text" id="qr-text" placeholder="Text / Link — e.g. https://google.com" autocomplete="off" />
+      </div>
+
+      <!-- WIFI -->
+      <div id="form-wifi" class="hidden">
+        <input type="text" id="wifi-ssid" placeholder="WiFi Name (SSID) *" autocomplete="off" />
+        <input type="text" id="wifi-pass" placeholder="Password (open network hole khali rakho)" autocomplete="off" />
+        <div class="row">
+          <div class="field">
+            <label>Security</label>
+            <select id="wifi-enc">
+              <option value="WPA" selected>WPA/WPA2</option>
+              <option value="WEP">WEP</option>
+              <option value="nopass">Open (no password)</option>
+            </select>
+          </div>
+          <div class="field check">
+            <label><input type="checkbox" id="wifi-hidden" /> Hidden SSID</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- VCARD -->
+      <div id="form-vcard" class="hidden">
+        <div class="row">
+          <div class="field"><input type="text" id="vc-name" placeholder="Full Name *" autocomplete="name" /></div>
+          <div class="field"><input type="text" id="vc-phone" placeholder="Phone *" autocomplete="tel" /></div>
+        </div>
+        <div class="row">
+          <div class="field"><input type="email" id="vc-email" placeholder="Email" autocomplete="email" /></div>
+          <div class="field"><input type="text" id="vc-org" placeholder="Company" /></div>
+        </div>
+        <input type="text" id="vc-url" placeholder="Website (https://...)" />
+        <input type="text" id="vc-addr" placeholder="Address (optional)" />
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>QR Color</label>
+          <input type="color" id="qr-color" value="#000000" />
+        </div>
+        <div class="field">
+          <label>Background</label>
+          <input type="color" id="qr-bg" value="#ffffff" />
+        </div>
+        <div class="field">
+          <label>Size</label>
+          <select id="qr-size">
+            <option value="256">256px</option>
+            <option value="512" selected>512px</option>
+            <option value="1024">1024px (Print)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Dot Style</label>
+          <select id="qr-style">
+            <option value="square">Square</option>
+            <option value="dots" selected>Dots</option>
+            <option value="rounded">Rounded</option>
+            <option value="extra-rounded">Extra Rounded</option>
+            <option value="classy">Classy</option>
+            <option value="classy-rounded">Classy Rounded</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Logo (center)</label>
+          <input type="file" id="qr-logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
+        </div>
+      </div>
+
+      <div class="row btn-row">
+        <button class="btn-remove hidden" id="btn-remove-logo" onclick="removeLogo()">Remove Logo ✕</button>
+      </div>
+
+      <button class="btn-main" id="btn-generate" onclick="generateQR()">✨ Generate QR</button>
+
+      <div id="qr-preview" aria-live="polite"></div>
+      <p id="qr-hint">Preview auto-updates • error-correction H (logo-safe)</p>
+      <p id="qr-payload" class="payload"></p>
+
+      <h3>⬇ Download</h3>
+      <div class="dl-grid">
+        <button onclick="downloadQR('png')">PNG</button>
+        <button onclick="downloadQR('jpeg')">JPG</button>
+        <button onclick="downloadQR('svg')">SVG <small>(print)</small></button>
+        <button onclick="downloadQR('pdf')">PDF</button>
+      </div>
+    </div>
+
+    <!-- ============ BULK ============ -->
+    <div id="panel-bulk" class="hidden">
+      <p class="howto">📄 <b>.csv / .txt</b> upload koro (proti line-e 1 ta link/text) — <b>200 ta porjonto ZIP</b> download hobe. Current color/style/logo apply hobe.</p>
+      <input type="file" id="bulk-file" accept=".csv,.txt" />
+      <textarea id="bulk-text" rows="5" placeholder="Paste here, one per line:&#10;https://site1.com&#10;https://site2.com&#10;BKash 017XXXXXXXX"></textarea>
+      <p id="bulk-count">0 lines detected</p>
+      <div class="progress hidden" id="bulk-progress-wrap"><div id="bulk-progress"></div></div>
+      <button class="btn-main" id="btn-bulk" onclick="generateBulk()">📦 Generate ZIP (PNG)</button>
+    </div>
+
+    <!-- ============ HISTORY ============ -->
+    <div id="panel-history" class="hidden">
+      <p class="howto">🕘 Last <b>20 ta</b> QR ei browser-e save thake (localStorage). Click korle abar load hobe.</p>
+      <div id="history-list"></div>
+      <button class="btn-remove" id="btn-clear-hist" onclick="clearHistory()">Clear All History</button>
+    </div>
+
+    <footer>
+      Made with ❤ by <b>Afnan Samin</b> · Free & Open Source (MIT) ·
+      <a href="https://github.com/afnan-samin/free_qr" target="_blank" rel="noopener">GitHub</a>
+    </footer>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <div id="toast" role="status"></div>
+
+  <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

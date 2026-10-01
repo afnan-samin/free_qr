@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,7 +12,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2322C55E'/><rect x='15' y='15' width='30' height='30' fill='white'/><rect x='55' y='15' width='30' height='30' fill='white'/><rect x='15' y='55' width='30' height='30' fill='white'/><rect x='55' y='55' width='30' height='30' fill='white'/></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -38,7 +38,13 @@
       <a href="#how">How it works</a>
       <a href="https://github.com/afnan-samin/free_qr" target="_blank" rel="noopener">GitHub</a>
     </nav>
-    <a class="btn-nav-cta" href="#generator">Make a QR code</a>
+    <div class="header-actions">
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark or light theme" title="Toggle theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.4M12 19.1v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 14.2A8.5 8.5 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg>
+      </button>
+      <a class="btn-nav-cta" href="#generator">Make a QR code</a>
+    </div>
   </div>
 </header>
 
@@ -57,7 +63,7 @@
       <div class="hero-stats">
         <div><strong>4</strong><span>export formats</span></div>
         <div><strong>200</strong><span>bulk codes at once</span></div>
-        <div><strong>0&#65039;&#8320;</strong><span>tracking, ever</span></div>
+        <div><strong>0</strong><span>tracking, ever</span></div>
       </div>
     </div>
     <div class="hero-visual" aria-hidden="true">
@@ -85,10 +91,13 @@
         <button id="tab-single" class="tab active" onclick="switchTab('single')">Make QR</button>
         <button id="tab-bulk" class="tab" onclick="switchTab('bulk')">Bulk</button>
         <button id="tab-history" class="tab" onclick="switchTab('history')">History <span id="hist-badge">0</span></button>
+        <button id="tab-scan" class="tab" onclick="switchTab('scan')">Scan</button>
       </div>
 
       <!-- ============ SINGLE ============ -->
-      <div id="panel-single">
+      <div id="panel-single" class="single-grid">
+
+       <div class="gen-left">
 
         <p class="label">What kind of QR code?</p>
         <div class="type-row" role="tablist" aria-label="QR code type">
@@ -127,7 +136,7 @@
         <!-- VCARD -->
         <div id="form-vcard" class="hidden">
           <input type="text" id="vc-name" placeholder="Full name *" autocomplete="name" />
-          <input type="text" id="vc-phone" placeholder="Phone number *" autocomplete="tel" />
+          <input type="tel" id="vc-phone" placeholder="Phone number * (numbers only)" autocomplete="off" inputmode="numeric" maxlength="15" />
           <input type="email" id="vc-email" placeholder="Email (optional)" autocomplete="email" />
           <div class="row">
             <div class="field"><input type="text" id="vc-org" placeholder="Shop / Company" /></div>
@@ -137,8 +146,8 @@
           <p class="tip">Anyone who scans this can save your number to their phone in one tap.</p>
         </div>
 
-        <details class="customize">
-          <summary>Customize colors, logo and style (optional)</summary>
+        <div class="customize">
+          <p class="customize-title">Customize colors, logo and style</p>
 
           <div class="row row-colors">
             <div class="field color-field">
@@ -166,61 +175,120 @@
                 <option value="256">Small (256px)</option>
                 <option value="512" selected>Medium (512px)</option>
                 <option value="1024">Large — for print (1024px)</option>
-                <option value="2048">Ultra HD — for large print (2048px)</option>
+                <option value="2048">Ultra HD (2048px)</option>
+                <option value="4096">Extreme — 500%+ zoom safe (4096px)</option>
               </select>
             </div>
             <div class="field">
               <label>Style</label>
               <select id="qr-style">
                 <option value="square">Square</option>
-                <option value="dots" selected>Dots</option>
+                <option value="dots">Dots</option>
                 <option value="rounded">Rounded</option>
                 <option value="extra-rounded">Extra rounded</option>
                 <option value="classy">Classy</option>
-                <option value="classy-rounded">Classy rounded</option>
+                <option value="classy-rounded" selected>Classy rounded</option>
               </select>
             </div>
           </div>
-
           <div class="field">
-            <label>Logo in the center (optional)</label>
-            <input type="file" id="qr-logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
+            <label>Upload your brand logo</label>
+            <label class="dropzone" for="qr-logo" id="logo-dropzone">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M20 16.5v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2"/></svg>
+              <span class="dropzone-text">Click to upload a <b>square (1:1)</b> logo</span>
+              <span class="dropzone-sub" id="logo-filename">Any ratio works · square (1:1) preferred · up to 2MB</span>
+            </label>
+            <input type="file" id="qr-logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" class="visually-hidden" />
           </div>
           <button class="btn-remove hidden" id="btn-remove-logo" onclick="removeLogo()">Remove logo</button>
-        </details>
 
+          <div class="brand-preset-row">
+            <button class="btn-chip" id="btn-save-brand" onclick="saveBrandPreset()">Save as my brand</button>
+            <button class="btn-chip hidden" id="btn-load-brand" onclick="loadBrandPreset()">Load my brand</button>
+          </div>
+        </div>
+
+       </div>
+
+       <div class="gen-right">
         <button class="btn-main" id="btn-generate" onclick="generateQR()">Generate QR Code</button>
 
         <div id="qr-preview" aria-live="polite"></div>
         <p id="qr-hint">Your QR code will appear here</p>
         <p id="qr-payload" class="payload"></p>
 
-        <p class="label">Save it</p>
+        <p class="label">Download</p>
+        <div class="svg-callout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-9-6-9 6 9 6 9-6Z"/><path d="M3 8v8l9 6 9-6V8"/><path d="M3 16V8"/></svg>
+          <span>Zooming way in? Grab the <b>SVG</b> — it's vector, so it stays perfectly sharp at any zoom level.</span>
+        </div>
+        <div class="caption-row">
+          <label class="check-label"><input type="checkbox" id="caption-toggle" /> Add a caption below the QR</label>
+          <input type="text" id="caption-text" class="hidden" placeholder="Scan Me" maxlength="40" />
+        </div>
+        <p class="tip caption-tip">Baked into PNG, JPG and PDF. SVG stays a plain code (no caption).</p>
         <div class="dl-grid">
           <button onclick="downloadQR('png')">PNG <small>image</small></button>
           <button onclick="downloadQR('jpeg')">JPG <small>image</small></button>
           <button onclick="downloadQR('svg')">SVG <small>print</small></button>
           <button onclick="downloadQR('pdf')">PDF <small>file</small></button>
         </div>
+       </div>
+
       </div>
 
       <!-- ============ BULK ============ -->
       <div id="panel-bulk" class="hidden">
         <p class="label">Give us the list</p>
         <p class="howto">Have 100 product links? Upload a <b>.txt or .csv file</b> — one link per line. Or just type the list below.</p>
-        <input type="file" id="bulk-file" accept=".csv,.txt" />
+        <label class="dropzone" for="bulk-file" id="bulk-dropzone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M20 16.5v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2"/></svg>
+          <span class="dropzone-text">Click to upload a <b>.txt or .csv</b> file</span>
+          <span class="dropzone-sub" id="bulk-filename">One link per line</span>
+        </label>
+        <input type="file" id="bulk-file" accept=".csv,.txt" class="visually-hidden" />
         <textarea id="bulk-text" rows="5" placeholder="One per line:&#10;https://myshop.com/product-1&#10;https://myshop.com/product-2"></textarea>
         <p id="bulk-count">0 lines</p>
         <p class="label">Download everything</p>
         <div class="progress hidden" id="bulk-progress-wrap"><div id="bulk-progress"></div></div>
         <button class="btn-main" id="btn-bulk" onclick="generateBulk()">Download all as ZIP</button>
+        <p class="or-divider">or</p>
+        <button class="btn-secondary" id="btn-bulk-sheet" onclick="generateBulkSheet()">Print sheet (A4 PDF, 20 per page)</button>
       </div>
 
       <!-- ============ HISTORY ============ -->
       <div id="panel-history" class="hidden">
-        <p class="howto">Your last <b>20</b> QR codes are saved here in this browser. Open any of them again with one click.</p>
+        <div class="warn-banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          <p>This history is saved <b>only on this device, in this browser</b> — it's never uploaded anywhere. It disappears if you clear your browser's site data/cache, use private/incognito mode, or press <b>"Clear all history"</b> below.</p>
+        </div>
+        <p class="howto">Every QR code you generate is saved here. Open any of them again with one click.</p>
         <div id="history-list"></div>
-        <button class="btn-remove" id="btn-clear-hist" onclick="clearHistory()">Clear all history</button>
+        <button class="btn-remove" id="btn-clear-hist" onclick="confirmClearHistory()">Clear all history</button>
+      </div>
+
+      <!-- ============ SCAN ============ -->
+      <div id="panel-scan" class="hidden">
+        <p class="howto">Point your camera at a QR code, or upload a photo of one.</p>
+        <button class="btn-main" id="btn-cam-toggle" onclick="toggleCamera()">Use camera</button>
+        <video id="scan-video" class="hidden" playsinline muted></video>
+        <canvas id="scan-canvas" class="visually-hidden"></canvas>
+        <p class="or-divider">or</p>
+        <label class="dropzone" for="scan-file" id="scan-dropzone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M20 16.5v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2"/></svg>
+          <span class="dropzone-text">Upload an <b>image</b> of a QR code</span>
+          <span class="dropzone-sub">PNG, JPG or WEBP</span>
+        </label>
+        <input type="file" id="scan-file" accept="image/png,image/jpeg,image/webp" class="visually-hidden" />
+
+        <div id="scan-result" class="hidden">
+          <p class="label">Decoded</p>
+          <p id="scan-result-text" class="payload"></p>
+          <div class="scan-result-actions">
+            <button id="scan-copy">Copy text</button>
+            <a id="scan-open" class="hidden" target="_blank" rel="noopener">Open link</a>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -253,6 +321,10 @@
       <div class="glass-card">
         <h3>No signup, no server</h3>
         <p>Everything runs client&#8209;side. Nothing you type is ever uploaded or stored remotely.</p>
+      </div>
+      <div class="glass-card">
+        <h3>Scan &amp; verify</h3>
+        <p>Every code you generate is auto&#8209;checked so a busy logo never breaks a scan — and the Scan tab reads QR codes back with your camera or an uploaded photo.</p>
       </div>
     </div>
   </section>
@@ -304,12 +376,26 @@
   </div>
 </footer>
 
-<div id="toast" role="status"></div>
+<!-- ============ CONFIRM MODAL ============ -->
+<div id="confirm-modal" class="modal-overlay hidden">
+  <div class="modal-box glass-panel">
+    <h3>Clear all history?</h3>
+    <p>This deletes every saved QR code from this browser. This can't be undone.</p>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" id="confirm-cancel">Cancel</button>
+      <button class="btn-modal-danger" id="confirm-ok">Delete all</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ NOTIFICATIONS ============ -->
+<div id="notif-stack" aria-live="polite"></div>
 
 <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

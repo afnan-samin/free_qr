@@ -1,26 +1,72 @@
-/* Free QR Generator — qr-code-styling + wifi/vcard + history + bulk */
+/* Free QR Generator — qr-code-styling + wifi/vcard + history + bulk + scan */
 let logoDataUrl = "";
 let qrType = "text";
 let currentPayload = "https://github.com/afnan-samin/free_qr";
 const HIST_KEY = "freeqr_history_v1";
-const HIST_MAX = 20;
+const THEME_KEY = "freeqr_theme";
+const BRAND_KEY = "freeqr_brand_v1";
 
 const $ = (id) => document.getElementById(id);
 const TYPE_LABEL = { text: "Link", wifi: "WiFi", vcard: "Contact" };
 
-function toast(msg) {
-  const t = $("toast");
-  t.textContent = msg;
-  t.classList.add("show");
-  clearTimeout(t._h);
-  t._h = setTimeout(() => t.classList.remove("show"), 2600);
+/* ---------- notifications (stacked — several can show at once) ---------- */
+const NOTIF_DURATION = 2500;
+
+function notify(message, type) {
+  const stack = $("notif-stack");
+  const el = document.createElement("div");
+  el.className = "notif notif-" + (type || "info");
+  el.innerHTML =
+    '<span class="notif-msg"></span>' +
+    '<button class="notif-close" aria-label="Close">&times;</button>' +
+    '<div class="notif-bar"></div>';
+  el.querySelector(".notif-msg").textContent = message;
+  stack.prepend(el);
+
+  let dismissed = false;
+  const timer = setTimeout(dismiss, NOTIF_DURATION);
+  const bar = el.querySelector(".notif-bar");
+
+  requestAnimationFrame(() => {
+    el.classList.add("in");
+    bar.style.transitionDuration = NOTIF_DURATION + "ms";
+    requestAnimationFrame(() => { bar.style.width = "0%"; });
+  });
+
+  function dismiss() {
+    if (dismissed) return;
+    dismissed = true;
+    clearTimeout(timer);
+    el.classList.remove("in");
+    el.classList.add("out");
+    setTimeout(() => el.remove(), 220);
+  }
+  el.querySelector(".notif-close").addEventListener("click", dismiss);
 }
+
+/* ---------- theme (dark / light) ---------- */
+function applyTheme(mode) {
+  document.documentElement.setAttribute("data-theme", mode);
+  document.documentElement.style.colorScheme = mode;
+}
+function initTheme() {
+  let saved = null;
+  try { saved = localStorage.getItem(THEME_KEY); } catch { /* private mode */ }
+  applyTheme(saved === "light" ? "light" : "dark");
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  const next = current === "light" ? "dark" : "light";
+  applyTheme(next);
+  try { localStorage.setItem(THEME_KEY, next); } catch { /* private mode */ }
+}
+initTheme();
 
 const qrCode = new QRCodeStyling({
   width: 300, height: 300, type: "canvas",
   data: currentPayload, image: "", margin: 10,
   qrOptions: { errorCorrectionLevel: "H" },
-  dotsOptions: { color: "#000000", type: "dots" },
+  dotsOptions: { color: "#000000", type: "classy-rounded" },
   cornersSquareOptions: { color: "#000000", type: "square" },
   cornersDotOptions: { color: "#000000", type: "square" },
   backgroundOptions: { color: "#ffffff" },
@@ -43,6 +89,24 @@ function setType(t) {
 function escWifi(s) {
   return (s || "").replace(/([\\;,:"])/g, "\\$1");
 }
+
+$("wifi-enc").addEventListener("change", () => {
+  $("wifi-pass").classList.toggle("hidden", $("wifi-enc").value === "nopass");
+});
+
+/* ---------- phone number: digits only ---------- */
+let _phoneWarnLock = false;
+$("vc-phone").addEventListener("input", (e) => {
+  const clean = e.target.value.replace(/\D/g, "");
+  if (clean !== e.target.value) {
+    e.target.value = clean;
+    if (!_phoneWarnLock) {
+      _phoneWarnLock = true;
+      notify("Only numbers are allowed in the phone number field", "error");
+      setTimeout(() => { _phoneWarnLock = false; }, 1500);
+    }
+  }
+});
 
 function buildPayload() {
   if (qrType === "wifi") {
@@ -81,7 +145,7 @@ function buildPayload() {
 function generateQR(silent) {
   const built = buildPayload();
   if (built.error) {
-    if (!silent) toast(built.error);
+    if (!silent) notify(built.error, "error");
     return false;
   }
   currentPayload = built.data;
@@ -89,7 +153,7 @@ function generateQR(silent) {
   const bg = $("qr-bg").value;
   const style = $("qr-style").value;
   if (color.toLowerCase() === bg.toLowerCase()) {
-    toast("QR color and background are the same — it won't scan!");
+    if (!silent) notify("QR color and background are the same — it won't scan!", "error");
     return false;
   }
   qrCode.update({
@@ -105,7 +169,8 @@ function generateQR(silent) {
     ? currentPayload.slice(0, 90) + "…" : currentPayload;
   if (!silent) {
     saveHistory(built.label, currentPayload);
-    toast("QR code is ready");
+    notify("QR code is ready", "success");
+    verifyScanFromPreview();
   }
   return true;
 }
@@ -123,67 +188,226 @@ $("qr-size").addEventListener("change", () => {
   qrCode._exportSize = parseInt($("qr-size").value, 10);
 });
 
-/* ---------- logo ---------- */
+/* ---------- scan-verify: decode the freshly-rendered preview and make sure
+   it actually reads back the payload you typed. Catches the case where a
+   big logo or low-contrast colors quietly broke the code. ---------- */
+function verifyScanFromPreview() {
+  if (typeof jsQR !== "function") return; // library failed to load — fail open, don't block the user
+  const canvas = document.querySelector("#qr-preview canvas");
+  if (!canvas) return;
+  setTimeout(() => {
+    try {
+      const ctx = canvas.getContext("2d");
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const result = jsQR(imgData.data, canvas.width, canvas.height);
+      if (!result || result.data !== currentPayload) {
+        notify("Heads up: this QR might not scan reliably — try a smaller logo or higher-contrast colors.", "error");
+      }
+    } catch (e) {
+      console.error("Scan verification skipped:", e);
+    }
+  }, 150);
+}
+
+/* ---------- logo (any ratio accepted, auto-fit to a square, up to 2MB) ---------- */
+const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+const LOGO_DEFAULT_HINT = "Any ratio works · square (1:1) preferred · up to 2MB";
+
 $("qr-logo").addEventListener("change", (e) => {
   const f = e.target.files[0];
   if (!f) return;
-  if (!/^image\//.test(f.type)) { toast("Please choose an image file (PNG/JPG/SVG)"); return; }
-  if (f.size > 2 * 1024 * 1024) { toast("Please keep the logo under 2MB (square PNG works best)"); return; }
+  if (!/^image\//.test(f.type)) {
+    notify("Please choose an image file (PNG/JPG/SVG/WEBP)", "error");
+    $("qr-logo").value = "";
+    return;
+  }
+  if (f.size > LOGO_MAX_BYTES) {
+    notify("That logo is too big — please keep it under 2MB", "error");
+    $("qr-logo").value = "";
+    return;
+  }
   const r = new FileReader();
   r.onload = (ev) => {
-    logoDataUrl = ev.target.result;
-    $("btn-remove-logo").classList.remove("hidden");
-    generateQR(true);
-    toast("Logo added");
+    const dataUrl = ev.target.result;
+    const img = new Image();
+    img.onload = () => {
+      squareFitLogo(img, (squaredDataUrl) => acceptLogo(squaredDataUrl, f.name));
+    };
+    img.onerror = () => {
+      // Some browsers are picky loading certain SVGs as <img> — fall back
+      // to the original file rather than blocking the upload entirely.
+      acceptLogo(dataUrl, f.name);
+    };
+    img.src = dataUrl;
   };
-  r.onerror = () => toast("Could not read the logo file");
+  r.onerror = () => notify("Could not read the logo file", "error");
   r.readAsDataURL(f);
 });
+
+// Draws any-ratio image centered onto a transparent square canvas ("contain"
+// fit) so it always ends up perfectly 1:1 without stretching or cropping.
+function squareFitLogo(img, done) {
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+  if (!w || !h || w === h) { done(img.src); return; }
+  const side = Math.max(w, h);
+  const canvas = document.createElement("canvas");
+  canvas.width = side;
+  canvas.height = side;
+  const ctx = canvas.getContext("2d");
+  const dx = (side - w) / 2;
+  const dy = (side - h) / 2;
+  ctx.drawImage(img, dx, dy, w, h);
+  try {
+    done(canvas.toDataURL("image/png"));
+  } catch {
+    done(img.src); // e.g. a tainted canvas — fall back to the original
+  }
+}
+
+function acceptLogo(dataUrl, filename) {
+  logoDataUrl = dataUrl;
+  $("btn-remove-logo").classList.remove("hidden");
+  $("logo-filename").textContent = filename;
+  generateQR(true);
+  notify("Logo added", "success");
+}
 function removeLogo() {
   logoDataUrl = "";
   $("qr-logo").value = "";
   $("btn-remove-logo").classList.add("hidden");
+  $("logo-filename").textContent = LOGO_DEFAULT_HINT;
   generateQR(true);
+}
+
+/* ---------- brand preset (color + background + style + logo) ---------- */
+function saveBrandPreset() {
+  const preset = {
+    color: $("qr-color").value,
+    bg: $("qr-bg").value,
+    style: $("qr-style").value,
+    logo: logoDataUrl || ""
+  };
+  try {
+    localStorage.setItem(BRAND_KEY, JSON.stringify(preset));
+    $("btn-load-brand").classList.remove("hidden");
+    notify("Saved as your brand preset", "success");
+  } catch {
+    notify("Couldn't save the preset — your browser storage may be full", "error");
+  }
+}
+function loadBrandPreset() {
+  let p = null;
+  try { p = JSON.parse(localStorage.getItem(BRAND_KEY) || "null"); } catch { /* ignore */ }
+  if (!p) { notify("No saved brand preset yet", "error"); return; }
+  $("qr-color").value = p.color || "#000000";
+  $("qr-bg").value = p.bg || "#ffffff";
+  $("qr-style").value = p.style || "classy-rounded";
+  $("qr-color-hex").textContent = $("qr-color").value;
+  $("qr-bg-hex").textContent = $("qr-bg").value;
+  if (p.logo) {
+    logoDataUrl = p.logo;
+    $("btn-remove-logo").classList.remove("hidden");
+    $("logo-filename").textContent = "Loaded from your saved brand";
+  }
+  generateQR(true);
+  notify("Brand preset loaded", "success");
+}
+function initBrandPresetUI() {
+  try {
+    if (localStorage.getItem(BRAND_KEY)) $("btn-load-brand").classList.remove("hidden");
+  } catch { /* private mode */ }
+}
+
+/* ---------- optional caption baked under the QR (PNG/JPG/PDF only) ---------- */
+$("caption-toggle").addEventListener("change", () => {
+  $("caption-text").classList.toggle("hidden", !$("caption-toggle").checked);
+});
+
+// Draws the QR image onto a taller canvas with an optional caption below —
+// used so PNG/JPG/PDF exports can include a "Scan Me"-style label.
+function drawCaptionedCanvas(img, size, captionText) {
+  const padBottom = captionText ? Math.round(size * 0.14) : 0;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size + padBottom;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = $("qr-bg").value || "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, size, size);
+  if (captionText) {
+    ctx.fillStyle = $("qr-color").value || "#000000";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "600 " + Math.round(size * 0.055) + "px Inter, sans-serif";
+    ctx.fillText(captionText, size / 2, size + padBottom / 2);
+  }
+  return canvas;
 }
 
 /* ---------- downloads ---------- */
 async function downloadQR(ext) {
-  if (!generateQR(true)) { toast("Please make a valid QR code first"); return; }
+  if (!generateQR(true)) { notify("Please make a valid QR code first", "error"); return; }
   const size = qrCode._exportSize || 512;
   const name = "qr-" + Date.now();
+  const wantCaption = $("caption-toggle").checked;
+  const captionText = wantCaption ? ($("caption-text").value.trim() || "Scan Me") : "";
+
   try {
-    if (ext === "pdf") {
-      const blob = await qrCode.getBlob("png");
-      const url = URL.createObjectURL(blob);
-      const img = new Image();
-      img.src = url;
-      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({ unit: "px", format: [size + 40, size + 96] });
-      pdf.setFontSize(16);
-      pdf.text("Scan Me", (size + 40) / 2, 28, { align: "center" });
-      pdf.addImage(img, "PNG", 20, 44, size, size);
-      pdf.setFontSize(9);
-      pdf.text(window.location.href, (size + 40) / 2, size + 72, { align: "center" });
-      pdf.save(name + ".pdf");
-      URL.revokeObjectURL(url);
-      toast("PDF downloaded");
+    if (ext === "svg") {
+      // SVG stays a plain vector code — captions aren't baked in for this format.
+      await qrCode.download({ name, extension: "svg" });
+      const b = buildPayload();
+      if (!b.error) saveHistory(b.label, currentPayload);
+      notify("SVG downloaded", "success");
       return;
     }
-    await qrCode.download({ name, extension: ext });
+
+    const rawExt = ext === "pdf" ? "png" : ext;
+    const blob = await qrCode.getRawData(rawExt);
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.src = url;
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+    const canvas = drawCaptionedCanvas(img, size, captionText);
+    URL.revokeObjectURL(url);
+
+    if (ext === "pdf") {
+      const w = canvas.width, h = canvas.height;
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit: "px", format: [w + 40, h + 40] });
+      pdf.addImage(canvas.toDataURL("image/png"), "PNG", 20, 20, w, h);
+      pdf.setFontSize(9);
+      pdf.text(window.location.href, (w + 40) / 2, h + 34, { align: "center" });
+      pdf.save(name + ".pdf");
+      notify("PDF downloaded", "success");
+    } else {
+      const mime = ext === "jpeg" ? "image/jpeg" : "image/png";
+      await new Promise((resolve) => {
+        canvas.toBlob((outBlob) => {
+          saveAs(outBlob, name + "." + (ext === "jpeg" ? "jpg" : "png"));
+          resolve();
+        }, mime, 0.95);
+      });
+      notify(ext.toUpperCase() + " downloaded", "success");
+    }
+
     const b = buildPayload();
     if (!b.error) saveHistory(b.label, currentPayload);
-    toast(ext.toUpperCase() + " downloaded");
-  } catch (e) { toast("Download failed: " + e.message); }
+  } catch (e) {
+    console.error("Download failed:", e);
+    notify("Couldn't create that download — please try again.", "error");
+  }
 }
 
 /* ---------- tabs ---------- */
 function switchTab(which) {
-  ["single", "bulk", "history"].forEach(k => {
+  ["single", "bulk", "history", "scan"].forEach(k => {
     $("tab-" + k).classList.toggle("active", k === which);
     $("panel-" + k).classList.toggle("hidden", k !== which);
   });
   if (which === "history") renderHistory();
+  if (which !== "scan") stopCamera();
 }
 
 /* ---------- bulk ---------- */
@@ -198,7 +422,11 @@ $("bulk-text").addEventListener("input", refreshCount);
 $("bulk-file").addEventListener("change", (e) => {
   const f = e.target.files[0];
   if (!f) return;
-  if (f.size > 2 * 1024 * 1024) { toast("Please keep the file under 2MB"); return; }
+  if (f.size > 2 * 1024 * 1024) {
+    notify("Please keep the file under 2MB", "error");
+    $("bulk-file").value = "";
+    return;
+  }
   const r = new FileReader();
   r.onload = (ev) => {
     let txt = String(ev.target.result || "");
@@ -206,9 +434,11 @@ $("bulk-file").addEventListener("change", (e) => {
       txt = txt.split(/\r?\n/).map(line => line.split(",")[0].trim().replace(/^"|"$/g, "")).join("\n");
     }
     $("bulk-text").value = txt;
+    $("bulk-filename").textContent = f.name;
     refreshCount();
-    toast("File loaded");
+    notify("File loaded", "success");
   };
+  r.onerror = () => notify("Could not read that file", "error");
   r.readAsText(f);
 });
 function safeName(s, i) {
@@ -217,37 +447,129 @@ function safeName(s, i) {
 }
 async function generateBulk() {
   let lines = parseLines($("bulk-text").value);
-  if (!lines.length) { toast("Upload a file or type a list first (one per line)"); return; }
+  if (!lines.length) { notify("Upload a file or type a list first (one per line)", "error"); return; }
   if (lines.length > 200) lines = lines.slice(0, 200);
   const color = $("qr-color").value, bg = $("qr-bg").value, style = $("qr-style").value;
   const btn = $("btn-bulk");
   btn.disabled = true; btn.textContent = "Making ZIP, please wait...";
   const wrap = $("bulk-progress-wrap"), bar = $("bulk-progress");
   wrap.classList.remove("hidden");
+  let okCount = 0, failCount = 0;
   try {
     const zip = new JSZip();
     for (let i = 0; i < lines.length; i++) {
-      const q = new QRCodeStyling({
-        width: 512, height: 512, type: "canvas", data: lines[i],
-        image: logoDataUrl || "", margin: 10,
-        qrOptions: { errorCorrectionLevel: "H" },
-        dotsOptions: { color, type: style },
-        backgroundOptions: { color: bg },
-        imageOptions: { crossOrigin: "anonymous", margin: 6, imageSize: 0.4 }
-      });
-      const blob = await q.getBlob("png");
-      zip.file(safeName(lines[i], i), blob);
+      try {
+        const q = new QRCodeStyling({
+          width: 512, height: 512, type: "canvas", data: lines[i],
+          image: logoDataUrl || "", margin: 10,
+          qrOptions: { errorCorrectionLevel: "H" },
+          dotsOptions: { color, type: style },
+          backgroundOptions: { color: bg },
+          imageOptions: { crossOrigin: "anonymous", margin: 6, imageSize: 0.4 }
+        });
+        const blob = await q.getRawData("png");
+        zip.file(safeName(lines[i], i), blob);
+        okCount++;
+      } catch (itemErr) {
+        console.error("Skipped a bulk line:", lines[i], itemErr);
+        failCount++;
+      }
       bar.style.width = Math.round(((i + 1) / lines.length) * 100) + "%";
     }
-    const out = await zip.generateAsync({ type: "blob" });
-    saveAs(out, "bulk-qr-" + Date.now() + ".zip");
-    toast(lines.length + " QR codes downloaded as ZIP");
-  } catch (e) { toast("Bulk failed: " + e.message); }
+    if (!okCount) {
+      notify("Couldn't create any QR codes from that list — please check the entries and try again.", "error");
+    } else {
+      const out = await zip.generateAsync({ type: "blob" });
+      saveAs(out, "bulk-qr-" + Date.now() + ".zip");
+      if (failCount) {
+        notify(okCount + " QR codes downloaded — " + failCount + " entr" + (failCount === 1 ? "y" : "ies") + " couldn't be turned into a QR code and were skipped.", "info");
+      } else {
+        notify(okCount + " QR codes downloaded as ZIP", "success");
+      }
+    }
+  } catch (e) {
+    console.error("Bulk generation failed:", e);
+    notify("Something went wrong preparing your ZIP file — please try again.", "error");
+  }
   wrap.classList.add("hidden"); bar.style.width = "0%";
   btn.disabled = false; btn.textContent = "Download all as ZIP";
 }
 
-/* ---------- history ---------- */
+/* ---------- bulk: printable A4 label sheet (PDF, grid layout) ---------- */
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+async function generateBulkSheet() {
+  let lines = parseLines($("bulk-text").value);
+  if (!lines.length) { notify("Upload a file or type a list first (one per line)", "error"); return; }
+  if (lines.length > 200) lines = lines.slice(0, 200);
+  const color = $("qr-color").value, bg = $("qr-bg").value, style = $("qr-style").value;
+  const btn = $("btn-bulk-sheet");
+  btn.disabled = true; btn.textContent = "Building sheet, please wait...";
+  const wrap = $("bulk-progress-wrap"), bar = $("bulk-progress");
+  wrap.classList.remove("hidden");
+
+  const COLS = 4, ROWS = 5, PER_PAGE = COLS * ROWS;
+  const PAGE_W = 210, PAGE_H = 297, MARGIN = 10; // A4, mm
+  const cellW = (PAGE_W - MARGIN * 2) / COLS;
+  const cellH = (PAGE_H - MARGIN * 2) / ROWS;
+  const qrSize = Math.min(cellW, cellH) - 14;
+
+  let okCount = 0, failCount = 0, placed = 0;
+  try {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: "mm", format: "a4" });
+    for (let i = 0; i < lines.length; i++) {
+      try {
+        const q = new QRCodeStyling({
+          width: 300, height: 300, type: "canvas", data: lines[i],
+          image: logoDataUrl || "", margin: 8,
+          qrOptions: { errorCorrectionLevel: "H" },
+          dotsOptions: { color, type: style },
+          backgroundOptions: { color: bg },
+          imageOptions: { crossOrigin: "anonymous", margin: 6, imageSize: 0.4 }
+        });
+        const blob = await q.getRawData("png");
+        const dataUrl = await blobToDataUrl(blob);
+
+        if (placed > 0 && placed % PER_PAGE === 0) pdf.addPage();
+        const posInPage = placed % PER_PAGE;
+        const col = posInPage % COLS, row = Math.floor(posInPage / COLS);
+        const x = MARGIN + col * cellW + (cellW - qrSize) / 2;
+        const y = MARGIN + row * cellH + 2;
+        pdf.addImage(dataUrl, "PNG", x, y, qrSize, qrSize);
+        pdf.setFontSize(7);
+        const label = lines[i].length > 28 ? lines[i].slice(0, 28) + "…" : lines[i];
+        pdf.text(label, MARGIN + col * cellW + cellW / 2, y + qrSize + 5, { align: "center", maxWidth: cellW - 4 });
+
+        placed++;
+        okCount++;
+      } catch (itemErr) {
+        console.error("Skipped a sheet line:", lines[i], itemErr);
+        failCount++;
+      }
+      bar.style.width = Math.round(((i + 1) / lines.length) * 100) + "%";
+    }
+    if (!okCount) {
+      notify("Couldn't build a print sheet from that list — please check the entries and try again.", "error");
+    } else {
+      pdf.save("qr-sheet-" + Date.now() + ".pdf");
+      notify(okCount + " QR codes laid out on a printable sheet" + (failCount ? " — " + failCount + " skipped" : ""), "success");
+    }
+  } catch (e) {
+    console.error("Sheet generation failed:", e);
+    notify("Something went wrong building the sheet — please try again.", "error");
+  }
+  wrap.classList.add("hidden"); bar.style.width = "0%";
+  btn.disabled = false; btn.textContent = "Print sheet (A4 PDF, 20 per page)";
+}
+
+/* ---------- history (no cap — keeps everything this browser generates) ---------- */
 function getHistory() {
   try { return JSON.parse(localStorage.getItem(HIST_KEY) || "[]"); }
   catch { return []; }
@@ -256,10 +578,9 @@ function saveHistory(label, data) {
   try {
     let h = getHistory().filter(x => x.data !== data);
     h.unshift({ label, data, time: Date.now(), type: qrType });
-    h = h.slice(0, HIST_MAX);
     localStorage.setItem(HIST_KEY, JSON.stringify(h));
     $("hist-badge").textContent = h.length;
-  } catch { /* private mode */ }
+  } catch { /* private mode / storage full */ }
 }
 function renderHistory() {
   const h = getHistory();
@@ -285,7 +606,7 @@ function renderHistory() {
       qrCode.update({ data: currentPayload });
       $("qr-payload").textContent = x.data.slice(0, 90);
       switchTab("single");
-      toast("Loaded from history");
+      notify("Loaded from history", "success");
     };
     d.querySelector(".del").onclick = () => {
       const nh = getHistory(); nh.splice(i, 1);
@@ -298,10 +619,144 @@ function renderHistory() {
 function clearHistory() {
   localStorage.removeItem(HIST_KEY);
   renderHistory();
-  toast("History cleared");
+  notify("History cleared", "success");
 }
+
+/* ---------- confirm modal (used for the destructive "clear history" action) ---------- */
+function confirmClearHistory() {
+  $("confirm-modal").classList.remove("hidden");
+}
+function hideConfirmModal() {
+  $("confirm-modal").classList.add("hidden");
+}
+$("confirm-cancel").addEventListener("click", hideConfirmModal);
+$("confirm-ok").addEventListener("click", () => {
+  clearHistory();
+  hideConfirmModal();
+});
+$("confirm-modal").addEventListener("click", (e) => {
+  if (e.target.id === "confirm-modal") hideConfirmModal();
+});
+
+/* ---------- scan: camera + upload-an-image decoding ---------- */
+let scanStream = null;
+let scanLoopId = null;
+
+async function toggleCamera() {
+  if (scanStream) { stopCamera(); return; }
+  if (typeof jsQR !== "function") {
+    notify("Scanner library failed to load — please refresh and try again.", "error");
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    notify("Your browser doesn't support camera access here — try uploading an image instead.", "error");
+    return;
+  }
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+  } catch (e) {
+    notify("Couldn't access the camera — check your browser's camera permission.", "error");
+    return;
+  }
+  const video = $("scan-video");
+  video.srcObject = scanStream;
+  video.classList.remove("hidden");
+  try { await video.play(); } catch { /* some browsers auto-play once metadata loads */ }
+  $("btn-cam-toggle").textContent = "Stop camera";
+  scanLoop();
+}
+function stopCamera() {
+  if (scanStream) {
+    scanStream.getTracks().forEach((t) => t.stop());
+    scanStream = null;
+  }
+  if (scanLoopId) { cancelAnimationFrame(scanLoopId); scanLoopId = null; }
+  $("scan-video").classList.add("hidden");
+  $("btn-cam-toggle").textContent = "Use camera";
+}
+function scanLoop() {
+  const video = $("scan-video"), canvas = $("scan-canvas");
+  if (!scanStream) return;
+  if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+    scanLoopId = requestAnimationFrame(scanLoop);
+    return;
+  }
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  try {
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const result = jsQR(imgData.data, canvas.width, canvas.height);
+    if (result && result.data) {
+      showScanResult(result.data);
+      stopCamera();
+      return;
+    }
+  } catch (e) {
+    console.error("Camera scan frame skipped:", e);
+  }
+  scanLoopId = requestAnimationFrame(scanLoop);
+}
+function showScanResult(text) {
+  $("scan-result").classList.remove("hidden");
+  $("scan-result-text").textContent = text;
+  const openLink = $("scan-open");
+  if (/^https?:\/\//i.test(text)) {
+    openLink.href = text;
+    openLink.classList.remove("hidden");
+  } else {
+    openLink.classList.add("hidden");
+  }
+  notify("QR code decoded", "success");
+}
+$("scan-copy").addEventListener("click", () => {
+  const text = $("scan-result-text").textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text)
+      .then(() => notify("Copied to clipboard", "success"))
+      .catch(() => notify("Couldn't copy — please select and copy the text manually", "error"));
+  } else {
+    notify("Copying isn't supported here — please select and copy the text manually", "error");
+  }
+});
+$("scan-file").addEventListener("change", (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  if (typeof jsQR !== "function") {
+    notify("Scanner library failed to load — please refresh and try again.", "error");
+    return;
+  }
+  const url = URL.createObjectURL(f);
+  const img = new Image();
+  img.onload = () => {
+    try {
+      const canvas = $("scan-canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const result = jsQR(imgData.data, canvas.width, canvas.height);
+      if (result && result.data) showScanResult(result.data);
+      else notify("Couldn't find a QR code in that image", "error");
+    } catch (err) {
+      console.error("Image scan failed:", err);
+      notify("Couldn't read that image — please try another one", "error");
+    } finally {
+      URL.revokeObjectURL(url);
+      $("scan-file").value = "";
+    }
+  };
+  img.onerror = () => {
+    notify("Could not read that image", "error");
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+});
 
 /* ---------- init ---------- */
 $("hist-badge").textContent = getHistory().length;
 refreshCount();
+initBrandPresetUI();
 generateQR(true);

@@ -188,6 +188,13 @@ $("qr-size").addEventListener("change", () => {
   qrCode._exportSize = parseInt($("qr-size").value, 10);
 });
 
+// clear-button visibility follows content
+document.querySelectorAll("#form-text input, #form-wifi input, #form-wifi select, #form-vcard input").forEach((el) => {
+  el.addEventListener("input", refreshClearButtons);
+  el.addEventListener("change", refreshClearButtons);
+});
+$("bulk-text").addEventListener("input", refreshClearButtons);
+
 /* ---------- scan-verify: decode the freshly-rendered preview and make sure
    it actually reads back the payload you typed. Catches the case where a
    big logo or low-contrast colors quietly broke the code. ---------- */
@@ -211,12 +218,11 @@ function verifyScanFromPreview() {
 
 /* ---------- logo (any ratio accepted, auto-fit to a square, up to 2MB) ---------- */
 const LOGO_MAX_BYTES = 2 * 1024 * 1024;
-const LOGO_DEFAULT_HINT = "Any ratio works · square (1:1) preferred · up to 2MB";
+const LOGO_DEFAULT_HINT = "Drag & drop or paste from clipboard · up to 2MB";
 
-$("qr-logo").addEventListener("change", (e) => {
-  const f = e.target.files[0];
+function handleLogoFile(f) {
   if (!f) return;
-  if (!/^image\//.test(f.type)) {
+  if (!/^image\//.test(f.type || "")) {
     notify("Please choose an image file (PNG/JPG/SVG/WEBP)", "error");
     $("qr-logo").value = "";
     return;
@@ -242,6 +248,9 @@ $("qr-logo").addEventListener("change", (e) => {
   };
   r.onerror = () => notify("Could not read the logo file", "error");
   r.readAsDataURL(f);
+}
+$("qr-logo").addEventListener("change", (e) => {
+  handleLogoFile(e.target.files[0]);
 });
 
 // Draws any-ratio image centered onto a transparent square canvas ("contain"
@@ -419,8 +428,7 @@ function refreshCount() {
   $("bulk-count").textContent = n + (n === 1 ? " line" : " lines") + (n > 200 ? " (using the first 200)" : "");
 }
 $("bulk-text").addEventListener("input", refreshCount);
-$("bulk-file").addEventListener("change", (e) => {
-  const f = e.target.files[0];
+function handleBulkFile(f) {
   if (!f) return;
   if (f.size > 2 * 1024 * 1024) {
     notify("Please keep the file under 2MB", "error");
@@ -440,6 +448,9 @@ $("bulk-file").addEventListener("change", (e) => {
   };
   r.onerror = () => notify("Could not read that file", "error");
   r.readAsText(f);
+}
+$("bulk-file").addEventListener("change", (e) => {
+  handleBulkFile(e.target.files[0]);
 });
 function safeName(s, i) {
   const n = s.replace(/https?:\/\//, "").replace(/[^\w\-]+/g, "-").slice(0, 40) || ("qr-" + i);
@@ -622,21 +633,101 @@ function clearHistory() {
   notify("History cleared", "success");
 }
 
-/* ---------- confirm modal (used for the destructive "clear history" action) ---------- */
-function confirmClearHistory() {
+/* ---------- confirm modal (shared by every destructive "clear" action) ---------- */
+let _confirmAction = null;
+function showConfirm(opts) {
+  $("confirm-title").textContent = opts.title || "Are you sure?";
+  $("confirm-msg").textContent = opts.message || "This can't be undone.";
+  $("confirm-ok").textContent = opts.okText || "Confirm";
+  _confirmAction = typeof opts.onOk === "function" ? opts.onOk : null;
   $("confirm-modal").classList.remove("hidden");
+}
+function confirmClearHistory() {
+  showConfirm({
+    title: "Clear all history?",
+    message: "This deletes every saved QR code from this browser. This can't be undone.",
+    okText: "Delete all",
+    onOk: clearHistory
+  });
 }
 function hideConfirmModal() {
   $("confirm-modal").classList.add("hidden");
+  _confirmAction = null;
 }
 $("confirm-cancel").addEventListener("click", hideConfirmModal);
 $("confirm-ok").addEventListener("click", () => {
-  clearHistory();
-  hideConfirmModal();
+  const fn = _confirmAction;
+  _confirmAction = null;
+  $("confirm-modal").classList.add("hidden");
+  if (fn) fn();
 });
 $("confirm-modal").addEventListener("click", (e) => {
   if (e.target.id === "confirm-modal") hideConfirmModal();
 });
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("confirm-modal").classList.contains("hidden")) hideConfirmModal();
+});
+
+/* ---------- clear buttons (one per input mode, always behind a confirm) ---------- */
+const CLEAR_LABEL = { text: "link / text", wifi: "WiFi details", vcard: "contact details", bulk: "bulk list" };
+function hasInputContent(mode) {
+  if (mode === "text") return $("qr-text").value.trim() !== "";
+  if (mode === "wifi") return $("wifi-ssid").value.trim() !== "" || $("wifi-pass").value !== "" || $("wifi-hidden").checked;
+  if (mode === "vcard") return ["vc-name", "vc-phone", "vc-email", "vc-org", "vc-url", "vc-addr"].some((id) => $(id).value.trim() !== "");
+  if (mode === "bulk") return $("bulk-text").value.trim() !== "";
+  return false;
+}
+function confirmClearInputs(mode) {
+  if (!hasInputContent(mode)) { notify("Nothing to clear", "info"); return; }
+  showConfirm({
+    title: "Clear " + (CLEAR_LABEL[mode] || "inputs") + "?",
+    message: "This removes everything you typed here. This can't be undone.",
+    okText: "Clear",
+    onOk: () => clearInputs(mode)
+  });
+}
+function clearInputs(mode) {
+  if (mode === "text") {
+    $("qr-text").value = "";
+  } else if (mode === "wifi") {
+    $("wifi-ssid").value = "";
+    $("wifi-pass").value = "";
+    $("wifi-enc").value = "WPA";
+    $("wifi-hidden").checked = false;
+    $("wifi-pass").classList.remove("hidden");
+  } else if (mode === "vcard") {
+    ["vc-name", "vc-phone", "vc-email", "vc-org", "vc-url", "vc-addr"].forEach((id) => { $(id).value = ""; });
+  } else if (mode === "bulk") {
+    $("bulk-text").value = "";
+    $("bulk-file").value = "";
+    $("bulk-filename").textContent = "Drag & drop supported · one link per line";
+    refreshCount();
+  }
+  refreshClearButtons();
+  if (mode === "bulk") notify("Bulk list cleared", "success");
+  else { generateQR(true); notify("Cleared", "success"); }
+}
+function refreshClearButtons() {
+  const map = { text: "btn-clear-text", wifi: "btn-clear-wifi", vcard: "btn-clear-vcard", bulk: "btn-clear-bulk" };
+  Object.keys(map).forEach((mode) => {
+    const btn = $(map[mode]);
+    if (btn) btn.classList.toggle("hidden", !hasInputContent(mode));
+  });
+}
+function confirmClearScan() {
+  if ($("scan-result").classList.contains("hidden")) { notify("Nothing to clear", "info"); return; }
+  showConfirm({
+    title: "Clear scan result?",
+    message: "This removes the decoded text from the screen. This can't be undone.",
+    okText: "Clear",
+    onOk: () => {
+      $("scan-result").classList.add("hidden");
+      $("scan-result-text").textContent = "";
+      $("scan-file").value = "";
+      notify("Scan result cleared", "success");
+    }
+  });
+}
 
 /* ---------- scan: camera + upload-an-image decoding ---------- */
 let scanStream = null;
@@ -720,9 +811,13 @@ $("scan-copy").addEventListener("click", () => {
     notify("Copying isn't supported here — please select and copy the text manually", "error");
   }
 });
-$("scan-file").addEventListener("change", (e) => {
-  const f = e.target.files[0];
+function handleScanFile(f) {
   if (!f) return;
+  if (!/^image\//.test(f.type || "")) {
+    notify("Please choose an image file (PNG/JPG/WEBP)", "error");
+    $("scan-file").value = "";
+    return;
+  }
   if (typeof jsQR !== "function") {
     notify("Scanner library failed to load — please refresh and try again.", "error");
     return;
@@ -753,6 +848,70 @@ $("scan-file").addEventListener("change", (e) => {
     URL.revokeObjectURL(url);
   };
   img.src = url;
+}
+$("scan-file").addEventListener("change", (e) => {
+  handleScanFile(e.target.files[0]);
+});
+
+/* ---------- drag & drop + paste (screenshots) for all upload dropzones ---------- */
+function wireDropzone(zoneId, onFile) {
+  const zone = $(zoneId);
+  if (!zone) return;
+  if (!zone.hasAttribute("tabindex")) zone.setAttribute("tabindex", "0");
+  zone.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      const targetId = zone.getAttribute("for");
+      const input = targetId
+        ? document.getElementById(targetId)
+        : zone.querySelector('input[type="file"]');
+      if (input) input.click();
+    }
+  });
+  ["dragenter", "dragover"].forEach((ev) =>
+    zone.addEventListener(ev, (e) => {
+      e.preventDefault();
+      zone.classList.add("dragover");
+    })
+  );
+  ["dragleave", "drop"].forEach((ev) =>
+    zone.addEventListener(ev, (e) => {
+      e.preventDefault();
+      if (ev === "dragleave" && e.relatedTarget && zone.contains(e.relatedTarget)) return;
+      zone.classList.remove("dragover");
+    })
+  );
+  zone.addEventListener("drop", (e) => {
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) onFile(f);
+  });
+}
+
+function isPanelVisible(id) {
+  const el = $(id);
+  return !!(el && !el.classList.contains("hidden"));
+}
+
+wireDropzone("logo-dropzone", handleLogoFile);
+wireDropzone("bulk-dropzone", handleBulkFile);
+wireDropzone("scan-dropzone", handleScanFile);
+
+// Clipboard paste (e.g. a screenshot): the pasted file goes to whichever upload panel is open.
+document.addEventListener("paste", (e) => {
+  const files = (e.clipboardData && e.clipboardData.files) || [];
+  if (!files.length) return; // plain-text paste — let inputs handle it natively
+  const f = files[0];
+  const isImage = /^image\//.test(f.type || "");
+  if (isPanelVisible("panel-scan") && isImage) {
+    e.preventDefault();
+    handleScanFile(f);
+  } else if (isPanelVisible("panel-bulk") && !isImage) {
+    e.preventDefault();
+    handleBulkFile(f);
+  } else if (isPanelVisible("panel-single") && isImage) {
+    e.preventDefault();
+    handleLogoFile(f);
+  }
 });
 
 /* ---------- init ---------- */
@@ -760,3 +919,4 @@ $("hist-badge").textContent = getHistory().length;
 refreshCount();
 initBrandPresetUI();
 generateQR(true);
+refreshClearButtons();

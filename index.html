@@ -111,6 +111,10 @@
         <!-- TEXT -->
         <div id="form-text">
           <input type="text" id="qr-text" placeholder="Type a link or any text — e.g. https://facebook.com/yourpage" autocomplete="off" />
+          <button class="btn-clear hidden" id="btn-clear-text" onclick="confirmClearInputs('text')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            Clear
+          </button>
         </div>
 
         <!-- WIFI -->
@@ -131,6 +135,10 @@
             </div>
           </div>
           <p class="tip">Anyone who scans this joins the WiFi right away — no typing needed.</p>
+          <button class="btn-clear hidden" id="btn-clear-wifi" onclick="confirmClearInputs('wifi')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            Clear
+          </button>
         </div>
 
         <!-- VCARD -->
@@ -144,6 +152,10 @@
           </div>
           <input type="text" id="vc-addr" placeholder="Address (optional)" />
           <p class="tip">Anyone who scans this can save your number to their phone in one tap.</p>
+          <button class="btn-clear hidden" id="btn-clear-vcard" onclick="confirmClearInputs('vcard')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            Clear
+          </button>
         </div>
 
         <div class="customize">
@@ -195,8 +207,8 @@
             <label>Upload your brand logo</label>
             <label class="dropzone" for="qr-logo" id="logo-dropzone">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M20 16.5v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2"/></svg>
-              <span class="dropzone-text">Click to upload a <b>square (1:1)</b> logo</span>
-              <span class="dropzone-sub" id="logo-filename">Any ratio works · square (1:1) preferred · up to 2MB</span>
+              <span class="dropzone-text">Click, drag or paste a <b>square (1:1)</b> logo</span>
+              <span class="dropzone-sub" id="logo-filename">Drag &amp; drop or paste from clipboard · up to 2MB</span>
             </label>
             <input type="file" id="qr-logo" accept="image/png,image/jpeg,image/svg+xml,image/webp" class="visually-hidden" />
           </div>
@@ -243,12 +255,16 @@
         <p class="howto">Have 100 product links? Upload a <b>.txt or .csv file</b> — one link per line. Or just type the list below.</p>
         <label class="dropzone" for="bulk-file" id="bulk-dropzone">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M20 16.5v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2"/></svg>
-          <span class="dropzone-text">Click to upload a <b>.txt or .csv</b> file</span>
-          <span class="dropzone-sub" id="bulk-filename">One link per line</span>
+          <span class="dropzone-text">Click or drag a <b>.txt or .csv</b> file here</span>
+          <span class="dropzone-sub" id="bulk-filename">Drag &amp; drop supported · one link per line</span>
         </label>
         <input type="file" id="bulk-file" accept=".csv,.txt" class="visually-hidden" />
         <textarea id="bulk-text" rows="5" placeholder="One per line:&#10;https://myshop.com/product-1&#10;https://myshop.com/product-2"></textarea>
         <p id="bulk-count">0 lines</p>
+        <button class="btn-clear hidden" id="btn-clear-bulk" onclick="confirmClearInputs('bulk')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          Clear list
+        </button>
         <p class="label">Download everything</p>
         <div class="progress hidden" id="bulk-progress-wrap"><div id="bulk-progress"></div></div>
         <button class="btn-main" id="btn-bulk" onclick="generateBulk()">Download all as ZIP</button>
@@ -269,24 +285,25 @@
 
       <!-- ============ SCAN ============ -->
       <div id="panel-scan" class="hidden">
-        <p class="howto">Point your camera at a QR code, or upload a photo of one.</p>
+        <p class="howto">Point your camera at a QR code, upload a photo, or paste one from your clipboard.</p>
         <button class="btn-main" id="btn-cam-toggle" onclick="toggleCamera()">Use camera</button>
         <video id="scan-video" class="hidden" playsinline muted></video>
         <canvas id="scan-canvas" class="visually-hidden"></canvas>
         <p class="or-divider">or</p>
         <label class="dropzone" for="scan-file" id="scan-dropzone">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M20 16.5v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2"/></svg>
-          <span class="dropzone-text">Upload an <b>image</b> of a QR code</span>
-          <span class="dropzone-sub">PNG, JPG or WEBP</span>
+          <span class="dropzone-text">Click, drag or paste an <b>image</b> of a QR code</span>
+          <span class="dropzone-sub">Drag &amp; drop or paste from clipboard · PNG, JPG or WEBP</span>
         </label>
         <input type="file" id="scan-file" accept="image/png,image/jpeg,image/webp" class="visually-hidden" />
 
         <div id="scan-result" class="hidden">
-          <p class="label">Decoded</p>
-          <p id="scan-result-text" class="payload"></p>
+          <p class="label">Output</p>
+          <p id="scan-result-text" class="output-box"></p>
           <div class="scan-result-actions">
             <button id="scan-copy">Copy text</button>
             <a id="scan-open" class="hidden" target="_blank" rel="noopener">Open link</a>
+            <button id="scan-clear" onclick="confirmClearScan()">Clear</button>
           </div>
         </div>
       </div>
@@ -379,8 +396,8 @@
 <!-- ============ CONFIRM MODAL ============ -->
 <div id="confirm-modal" class="modal-overlay hidden">
   <div class="modal-box glass-panel">
-    <h3>Clear all history?</h3>
-    <p>This deletes every saved QR code from this browser. This can't be undone.</p>
+    <h3 id="confirm-title">Clear all history?</h3>
+    <p id="confirm-msg">This deletes every saved QR code from this browser. This can't be undone.</p>
     <div class="modal-actions">
       <button class="btn-modal-cancel" id="confirm-cancel">Cancel</button>
       <button class="btn-modal-danger" id="confirm-ok">Delete all</button>

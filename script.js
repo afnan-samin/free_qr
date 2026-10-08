@@ -149,6 +149,7 @@ function generateQR(silent) {
     return false;
   }
   currentPayload = built.data;
+  updateLinkPreview(currentPayload);
   const color = $("qr-color").value;
   const bg = $("qr-bg").value;
   const style = $("qr-style").value;
@@ -173,6 +174,30 @@ function generateQR(silent) {
     verifyScanFromPreview();
   }
   return true;
+}
+
+// Shows the auto link-preview card below the generator only when the
+// current QR payload is an http(s) link; hidden for WiFi, contact, or plain text.
+function updateLinkPreview(payload) {
+  const box = $("link-preview");
+  if (!box) return;
+  const url = (payload || "").trim();
+  if (!/^https?:\/\//i.test(url)) { box.classList.add("hidden"); return; }
+  const short = url.length > 80 ? url.slice(0, 80) + "…" : url;
+  $("link-preview-url").textContent = short;
+  $("link-preview-url").href = url;
+  $("link-preview-open").href = url;
+  if (isPanelVisible("panel-single")) box.classList.remove("hidden");
+}
+function copyLinkPreview() {
+  const url = $("link-preview-url").href;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url)
+      .then(() => notify("Link copied to clipboard", "success"))
+      .catch(() => notify("Couldn't copy — please select and copy the link manually", "error"));
+  } else {
+    notify("Copying isn't supported here — please select and copy the link manually", "error");
+  }
 }
 
 // live preview (debounced)
@@ -417,6 +442,8 @@ function switchTab(which) {
   });
   if (which === "history") renderHistory();
   if (which !== "scan") stopCamera();
+  if (which === "single") updateLinkPreview(currentPayload);
+  else $("link-preview").classList.add("hidden");
 }
 
 /* ---------- bulk ---------- */
@@ -689,6 +716,7 @@ function confirmClearInputs(mode) {
 function clearInputs(mode) {
   if (mode === "text") {
     $("qr-text").value = "";
+    updateLinkPreview("");
   } else if (mode === "wifi") {
     $("wifi-ssid").value = "";
     $("wifi-pass").value = "";

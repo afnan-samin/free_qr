@@ -9,6 +9,13 @@ const BRAND_KEY = "freeqr_brand_v1";
 const $ = (id) => document.getElementById(id);
 const TYPE_LABEL = { text: "Link", wifi: "WiFi", vcard: "Contact" };
 
+/* ---------- auto-growing textarea so long text is never hidden ---------- */
+function autoGrow(el) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = el.scrollHeight + "px";
+}
+
 /* ---------- notifications (stacked — several can show at once) ---------- */
 const NOTIF_DURATION = 2500;
 
@@ -83,7 +90,115 @@ function setType(t) {
   $("form-text").classList.toggle("hidden", t !== "text");
   $("form-wifi").classList.toggle("hidden", t !== "wifi");
   $("form-vcard").classList.toggle("hidden", t !== "vcard");
+  hidePasteHint();
+  refreshClearButtons();
   generateQR(true);
+}
+
+/* ---------- paste into the active details field ---------- */
+let lastDetailsField = null;
+function isPasteableField(el) {
+  return !!(el && /^(INPUT|TEXTAREA)$/.test(el.tagName) &&
+    !["checkbox", "color", "file", "range"].includes(el.type));
+}
+function getPasteTarget() {
+  const active = document.activeElement;
+  if (isPasteableField(active) && active.closest && active.closest("#panel-single")) {
+    return active;
+  }
+  // Clicking the Paste button takes focus off the field, so remember the
+  // field the user was last typing in (as long as it's still visible).
+  if (isPasteableField(lastDetailsField) && lastDetailsField.offsetParent !== null &&
+      lastDetailsField.closest("#panel-single")) {
+    return lastDetailsField;
+  }
+  const form = $("form-" + qrType);
+  const el = form && form.querySelector('input[type="text"], input[type="tel"], input[type="email"], textarea');
+  return el || $("qr-text");
+}
+function insertAtCursor(el, text) {
+  if (!el) return;
+  const start = el.selectionStart == null ? el.value.length : el.selectionStart;
+  const end = el.selectionEnd == null ? el.value.length : el.selectionEnd;
+  el.value = el.value.slice(0, start) + text + el.value.slice(end);
+  const pos = start + text.length;
+  try { el.selectionStart = el.selectionEnd = pos; } catch { /* ignore */ }
+  el.focus();
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  if (el.id === "qr-text") autoGrow(el);
+}
+// Chrome cannot remember clipboard-read permission for file:// pages, so it
+// re-prompts on every read. Only use the API on a real hosted origin; on
+// local files fall back to a focused field + Ctrl+V (no repeated popups).
+let _clipboardDenied = false;
+let _clipCache = "";
+let _clipCacheValid = false;
+function canReadClipboard() {
+  return !!(navigator.clipboard && navigator.clipboard.readText) && window.isSecureContext;
+}
+function invalidateClipCache() {
+  _clipCacheValid = false;
+}
+// Chrome fires this when the clipboard changes. Watching it keeps the cached
+// text fresh, so repeated clicks don't re-open the permission prompt.
+if (navigator.clipboard && "onclipboardchange" in navigator.clipboard) {
+  navigator.clipboard.addEventListener("clipboardchange", invalidateClipCache);
+}
+// Leaving the page is when the user might copy something new elsewhere, so
+// drop the cached text then and re-read on the next Paste click.
+window.addEventListener("blur", invalidateClipCache);
+function showPasteHint(message) {
+  const el = $("paste-hint");
+  if (!el) return;
+  el.textContent = message;
+  el.classList.remove("hidden");
+}
+function hidePasteHint() {
+  const el = $("paste-hint");
+  if (el) el.classList.add("hidden");
+}
+function manualPaste(target, message) {
+  if (!target) return;
+  target.focus();
+  try {
+    const end = target.value.length;
+    target.setSelectionRange(end, end);
+  } catch { /* not a text field */ }
+  showPasteHint(message || "Your browser blocked clipboard access — press Ctrl+V to paste here.");
+}
+function pasteDetails() {
+  const target = getPasteTarget();
+  if (!target) return;
+  if (!canReadClipboard()) {
+    manualPaste(target, "This browser doesn't support clipboard reading — press Ctrl+V to paste here.");
+    return;
+  }
+  if (_clipboardDenied) {
+    manualPaste(target, "Clipboard access is blocked for this site — press Ctrl+V to paste here (or allow clipboard access in the site settings).");
+    return;
+  }
+  if (_clipCacheValid) {
+    if (!_clipCache) { notify("Clipboard is empty", "info"); return; }
+    insertAtCursor(target, _clipCache);
+    notify("Pasted from clipboard", "success");
+    return;
+  }
+  navigator.clipboard.readText()
+    .then((text) => {
+      _clipCache = text;
+      _clipCacheValid = true;
+      if (!text) { notify("Clipboard is empty", "info"); return; }
+      insertAtCursor(target, text);
+      notify("Pasted from clipboard", "success");
+    })
+    .catch((err) => {
+      if (err && (err.name === "NotAllowedError" || err.name === "SecurityError")) {
+        _clipboardDenied = true;
+        manualPaste(target, "Clipboard access is blocked for this site — allow it in the site settings, then click Paste again.");
+      } else {
+        notify("Couldn't read the clipboard — please try again", "error");
+      }
+    });
 }
 
 function escWifi(s) {
@@ -143,6 +258,7 @@ function buildPayload() {
 
 /* ---------- generate ---------- */
 function generateQR(silent) {
+  updateCaptionPreview();
   const built = buildPayload();
   if (built.error) {
     if (!silent) notify(built.error, "error");
@@ -202,8 +318,13 @@ function copyLinkPreview() {
 
 // live preview (debounced)
 let _t;
-document.querySelectorAll("#panel-single input, #panel-single select").forEach(el => {
+document.querySelectorAll("#panel-single input, #panel-single textarea, #panel-single select").forEach(el => {
+  if (isPasteableField(el)) {
+    el.addEventListener("focus", () => { lastDetailsField = el; });
+  }
   el.addEventListener("input", () => {
+    hidePasteHint();
+    if (el.id === "qr-text") autoGrow(el);
     if (el.id === "qr-logo" || el.id === "qr-size") return;
     clearTimeout(_t);
     _t = setTimeout(() => generateQR(true), 450);
@@ -214,7 +335,7 @@ $("qr-size").addEventListener("change", () => {
 });
 
 // clear-button visibility follows content
-document.querySelectorAll("#form-text input, #form-wifi input, #form-wifi select, #form-vcard input").forEach((el) => {
+document.querySelectorAll("#form-text textarea, #form-wifi input, #form-wifi select, #form-vcard input").forEach((el) => {
   el.addEventListener("input", refreshClearButtons);
   el.addEventListener("change", refreshClearButtons);
 });
@@ -354,27 +475,95 @@ function initBrandPresetUI() {
 }
 
 /* ---------- optional caption baked under the QR (PNG/JPG/PDF only) ---------- */
+function getCaptionText() {
+  if (!$("caption-toggle").checked) return "";
+  return $("caption-text").value.trim() || "Scan Me";
+}
+
+// Mirrors the downloaded caption in the live preview, right under the QR.
+function updateCaptionPreview() {
+  const el = $("qr-caption");
+  if (!el) return;
+  const text = getCaptionText();
+  if (!text) {
+    el.classList.add("hidden");
+    el.textContent = "";
+    return;
+  }
+  el.textContent = text;
+  el.style.background = $("qr-bg").value || "#ffffff";
+  el.style.color = $("qr-color").value || "#000000";
+  el.classList.remove("hidden");
+}
+
 $("caption-toggle").addEventListener("change", () => {
   $("caption-text").classList.toggle("hidden", !$("caption-toggle").checked);
+  updateCaptionPreview();
 });
+$("caption-text").addEventListener("input", updateCaptionPreview);
+$("qr-color").addEventListener("input", updateCaptionPreview);
+$("qr-bg").addEventListener("input", updateCaptionPreview);
 
-// Draws the QR image onto a taller canvas with an optional caption below —
-// used so PNG/JPG/PDF exports can include a "Scan Me"-style label.
+// Splits the caption into lines that fit inside maxWidth, breaking long
+// words too — so an entry like "[Chemistry 2nd Paper Final 2_Answer Sheet]"
+// wraps instead of being clipped on both sides.
+function wrapCaptionLines(ctx, text, maxWidth) {
+  const lines = [];
+  text.split(/\r?\n/).forEach((paragraph) => {
+    const words = paragraph.split(/\s+/).filter(Boolean);
+    if (!words.length) { lines.push(""); return; }
+    let line = "";
+    words.forEach((word) => {
+      let rest = word;
+      while (ctx.measureText(rest).width > maxWidth && rest.length > 1) {
+        let cut = rest.length - 1;
+        while (cut > 1 && ctx.measureText(rest.slice(0, cut)).width > maxWidth) cut--;
+        if (line) { lines.push(line); line = ""; }
+        lines.push(rest.slice(0, cut));
+        rest = rest.slice(cut);
+      }
+      const test = line ? line + " " + rest : rest;
+      if (line && ctx.measureText(test).width > maxWidth) {
+        lines.push(line);
+        line = rest;
+      } else {
+        line = test;
+      }
+    });
+    if (line) lines.push(line);
+  });
+  return lines;
+}
+
+// Draws the QR image onto a taller canvas with an optional wrapped caption
+// below — used so PNG/JPG/PDF exports show the full caption text.
 function drawCaptionedCanvas(img, size, captionText) {
-  const padBottom = captionText ? Math.round(size * 0.14) : 0;
   const canvas = document.createElement("canvas");
+  const measureCtx = canvas.getContext("2d");
+  const padX = Math.round(size * 0.06);
+  const fontSize = Math.round(size * 0.05);
+  const lineHeight = Math.round(fontSize * 1.32);
+  const verticalPad = Math.round(size * 0.045);
+  const maxWidth = size - padX * 2;
+  const font = "600 " + fontSize + "px Inter, sans-serif";
+
+  measureCtx.font = font;
+  const lines = captionText ? wrapCaptionLines(measureCtx, captionText, maxWidth) : [];
+  const padBottom = lines.length ? verticalPad * 2 + lines.length * lineHeight : 0;
+
   canvas.width = size;
   canvas.height = size + padBottom;
   const ctx = canvas.getContext("2d");
   ctx.fillStyle = $("qr-bg").value || "#ffffff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(img, 0, 0, size, size);
-  if (captionText) {
+  if (lines.length) {
+    ctx.font = font;
     ctx.fillStyle = $("qr-color").value || "#000000";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = "600 " + Math.round(size * 0.055) + "px Inter, sans-serif";
-    ctx.fillText(captionText, size / 2, size + padBottom / 2);
+    const startY = size + padBottom / 2 - ((lines.length - 1) * lineHeight) / 2;
+    lines.forEach((line, i) => ctx.fillText(line, size / 2, startY + i * lineHeight));
   }
   return canvas;
 }
@@ -639,7 +828,10 @@ function renderHistory() {
     d.querySelector("small").textContent = (TYPE_LABEL[x.type] || "Link") + " • " + date;
     d.querySelector("button").onclick = () => {
       if (x.type && x.type !== qrType) setType(x.type);
-      if (x.type === "text" || !x.type) $("qr-text").value = x.data.length < 200 ? x.data : "";
+      if (x.type === "text" || !x.type) {
+        $("qr-text").value = x.data.length < 200 ? x.data : "";
+        autoGrow($("qr-text"));
+      }
       currentPayload = x.data;
       qrCode.update({ data: currentPayload });
       $("qr-payload").textContent = x.data.slice(0, 90);
@@ -716,6 +908,7 @@ function confirmClearInputs(mode) {
 function clearInputs(mode) {
   if (mode === "text") {
     $("qr-text").value = "";
+    autoGrow($("qr-text"));
     updateLinkPreview("");
   } else if (mode === "wifi") {
     $("wifi-ssid").value = "";
@@ -736,11 +929,10 @@ function clearInputs(mode) {
   else { generateQR(true); notify("Cleared", "success"); }
 }
 function refreshClearButtons() {
-  const map = { text: "btn-clear-text", wifi: "btn-clear-wifi", vcard: "btn-clear-vcard", bulk: "btn-clear-bulk" };
-  Object.keys(map).forEach((mode) => {
-    const btn = $(map[mode]);
-    if (btn) btn.classList.toggle("hidden", !hasInputContent(mode));
-  });
+  const detailsBtn = $("btn-clear-details");
+  if (detailsBtn) detailsBtn.classList.toggle("hidden", !hasInputContent(qrType));
+  const bulkBtn = $("btn-clear-bulk");
+  if (bulkBtn) bulkBtn.classList.toggle("hidden", !hasInputContent("bulk"));
 }
 function confirmClearScan() {
   if ($("scan-result").classList.contains("hidden")) { notify("Nothing to clear", "info"); return; }
@@ -943,8 +1135,13 @@ document.addEventListener("paste", (e) => {
 });
 
 /* ---------- init ---------- */
+if (location.protocol === "file:" && $("btn-paste-details")) {
+  $("btn-paste-details").title = "Paste from clipboard — Chrome asks permission each time on local files (use localhost for one-click paste)";
+}
 $("hist-badge").textContent = getHistory().length;
 refreshCount();
 initBrandPresetUI();
+autoGrow($("qr-text"));
+updateCaptionPreview();
 generateQR(true);
 refreshClearButtons();

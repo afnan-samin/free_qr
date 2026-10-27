@@ -106,15 +106,24 @@
           <button class="type-pill" data-type="vcard" onclick="setType('vcard')">Contact Card</button>
         </div>
 
-        <p class="label">Enter the details</p>
+        <div class="details-head">
+          <p class="label">Enter the details</p>
+          <div class="details-actions">
+            <button class="btn-paste" id="btn-paste-details" onclick="pasteDetails()" title="Paste from clipboard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/></svg>
+              Paste
+            </button>
+            <button class="btn-clear hidden" id="btn-clear-details" onclick="confirmClearInputs(qrType)" title="Clear details">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              Clear
+            </button>
+          </div>
+        </div>
+        <p id="paste-hint" class="tip paste-hint hidden"></p>
 
         <!-- TEXT -->
         <div id="form-text">
-          <input type="text" id="qr-text" placeholder="Type a link or any text — e.g. https://facebook.com/yourpage" autocomplete="off" />
-          <button class="btn-clear hidden" id="btn-clear-text" onclick="confirmClearInputs('text')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-            Clear
-          </button>
+          <textarea id="qr-text" rows="2" placeholder="Type a link or any text — e.g. https://facebook.com/yourpage" autocomplete="off"></textarea>
         </div>
 
         <!-- WIFI -->
@@ -135,10 +144,6 @@
             </div>
           </div>
           <p class="tip">Anyone who scans this joins the WiFi right away — no typing needed.</p>
-          <button class="btn-clear hidden" id="btn-clear-wifi" onclick="confirmClearInputs('wifi')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-            Clear
-          </button>
         </div>
 
         <!-- VCARD -->
@@ -152,11 +157,13 @@
           </div>
           <input type="text" id="vc-addr" placeholder="Address (optional)" />
           <p class="tip">Anyone who scans this can save your number to their phone in one tap.</p>
-          <button class="btn-clear hidden" id="btn-clear-vcard" onclick="confirmClearInputs('vcard')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-            Clear
-          </button>
         </div>
+
+        <div class="caption-row">
+          <label class="check-label"><input type="checkbox" id="caption-toggle" /> Add a caption below the QR</label>
+          <input type="text" id="caption-text" class="hidden" placeholder="Scan Me" maxlength="120" />
+        </div>
+        <p class="tip caption-tip">Baked into PNG, JPG and PDF. SVG stays a plain code (no caption).</p>
 
         <div class="customize">
           <p class="customize-title">Customize colors, logo and style</p>
@@ -226,6 +233,7 @@
         <button class="btn-main" id="btn-generate" onclick="generateQR()">Generate QR Code</button>
 
         <div id="qr-preview" aria-live="polite"></div>
+        <div id="qr-caption" class="qr-caption hidden" aria-hidden="true"></div>
         <p id="qr-hint">Your QR code will appear here</p>
         <p id="qr-payload" class="payload"></p>
 
@@ -234,11 +242,6 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-9-6-9 6 9 6 9-6Z"/><path d="M3 8v8l9 6 9-6V8"/><path d="M3 16V8"/></svg>
           <span>Zooming way in? Grab the <b>SVG</b> — it's vector, so it stays perfectly sharp at any zoom level.</span>
         </div>
-        <div class="caption-row">
-          <label class="check-label"><input type="checkbox" id="caption-toggle" /> Add a caption below the QR</label>
-          <input type="text" id="caption-text" class="hidden" placeholder="Scan Me" maxlength="40" />
-        </div>
-        <p class="tip caption-tip">Baked into PNG, JPG and PDF. SVG stays a plain code (no caption).</p>
         <div class="dl-grid">
           <button onclick="downloadQR('png')">PNG <small>image</small></button>
           <button onclick="downloadQR('jpeg')">JPG <small>image</small></button>

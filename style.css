@@ -348,6 +348,28 @@ header, main, footer { position: relative; z-index: 1; }
 
 .label { font-size: 13px; font-weight: 600; color: var(--text-muted); margin: 22px 0 10px; }
 
+.details-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 22px 0 10px; }
+.details-head .label { margin: 0; }
+.details-actions { display: flex; align-items: center; gap: 8px; }
+.paste-hint { color: var(--accent-teal); margin: 0 0 10px; }
+.btn-paste {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid rgba(45, 212, 191, 0.45);
+  color: var(--accent-teal);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.btn-paste:hover { background: rgba(45, 212, 191, 0.1); }
+.btn-paste svg { width: 14px; height: 14px; }
+
 .type-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .type-pill {
   flex: 1;
@@ -389,6 +411,12 @@ select option { color: #10162b; background: #ffffff; }
 :root[data-theme="dark"] select option { color: #f4f6fb; background: #101830; }
 input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
 textarea { resize: vertical; font-family: var(--font-body); }
+#qr-text {
+  resize: none;
+  overflow: hidden;
+  min-height: 52px;
+  line-height: 1.5;
+}
 
 .row { display: flex; gap: 12px; }
 .row .field { flex: 1; }
@@ -557,6 +585,20 @@ input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-glass);
   max-width: 100%;
+}
+.qr-caption {
+  width: 300px;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 13px 18px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.32;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 #qr-hint { text-align: center; color: var(--text-faint); font-size: 13.5px; margin: 6px 0 0; }
 .payload { text-align: center; color: var(--text-faint); font-size: 12px; font-family: var(--font-mono); word-break: break-all; margin: 6px 0 0; }

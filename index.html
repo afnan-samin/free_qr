@@ -17,11 +17,7 @@
 </head>
 <body>
 
-<div class="bg-blobs" aria-hidden="true">
-  <span class="blob blob-a"></span>
-  <span class="blob blob-b"></span>
-  <span class="blob blob-c"></span>
-</div>
+
 
 <!-- ============ HEADER ============ -->
 <header class="site-header">
@@ -249,20 +245,20 @@
         <p id="qr-hint">Your QR code will appear here</p>
         <p id="qr-payload" class="payload"></p>
 
-        <button class="btn-main" id="btn-download-main" onclick="downloadQR('png')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
-          Download
-        </button>
         <div class="svg-callout">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-9-6-9 6 9 6 9-6Z"/><path d="M3 8v8l9 6 9-6V8"/><path d="M3 16V8"/></svg>
           <span>Zooming way in? Grab the <b>SVG</b> — it's vector, so it stays perfectly sharp at any zoom level.</span>
         </div>
-        <div class="dl-grid">
-          <button onclick="downloadQR('png')">PNG <small>image</small></button>
-          <button onclick="downloadQR('jpeg')">JPG <small>image</small></button>
-          <button onclick="downloadQR('svg')">SVG <small>print</small></button>
-          <button onclick="downloadQR('pdf')">PDF <small>file</small></button>
+        <div class="dl-grid" id="format-grid">
+          <button type="button" data-format="png" onclick="selectDownloadFormat('png')">PNG <small>image</small></button>
+          <button type="button" data-format="jpeg" onclick="selectDownloadFormat('jpeg')">JPG <small>image</small></button>
+          <button type="button" data-format="svg" onclick="selectDownloadFormat('svg')">SVG <small>print</small></button>
+          <button type="button" data-format="pdf" onclick="selectDownloadFormat('pdf')">PDF <small>file</small></button>
         </div>
+        <button class="btn-main" id="btn-download-main" onclick="downloadSelectedFormat()" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+          Download
+        </button>
        </div>
 
       </div>

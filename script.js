@@ -451,6 +451,7 @@ function acceptLogo(dataUrl, filename) {
   $("btn-remove-logo").classList.remove("hidden");
   $("logo-filename").textContent = filename;
   generateQR(true);
+  qrCode.update(getQROptions(300));
   notify("Logo added", "success");
 }
 function removeLogo() {
@@ -492,6 +493,8 @@ function loadBrandPreset() {
     $("logo-filename").textContent = "Loaded from your saved brand";
   }
   generateQR(true);
+  qrCode.update(getQROptions(300));
+  updateCaptionPreview();
   notify("Brand preset loaded", "success");
 }
 function initBrandPresetUI() {
@@ -662,6 +665,22 @@ function drawCaptionedCanvas(img, size, captionText) {
   return canvas;
 }
 
+let selectedDownloadFormat = "";
+function selectDownloadFormat(fmt) {
+  selectedDownloadFormat = fmt;
+  document.querySelectorAll("#format-grid button").forEach((b) => {
+    b.classList.toggle("selected", b.dataset.format === fmt);
+  });
+  const btn = $("btn-download-main");
+  if (btn) btn.disabled = false;
+}
+function downloadSelectedFormat() {
+  if (!selectedDownloadFormat) {
+    notify("Please choose a format first", "info");
+    return;
+  }
+  downloadQR(selectedDownloadFormat);
+}
 /* ---------- downloads ---------- */
 async function downloadQR(ext) {
   if (!generateQR(true)) { notify("Please make a valid QR code first", "error"); return; }

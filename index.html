@@ -160,10 +160,19 @@
         </div>
 
         <div class="caption-row">
-          <label class="check-label"><input type="checkbox" id="caption-toggle" /> Add a caption below the QR</label>
-          <input type="text" id="caption-text" class="hidden" placeholder="Scan Me" maxlength="120" />
+          <div class="caption-head">
+            <label class="check-label"><input type="checkbox" id="caption-toggle" /> Add a caption below the QR</label>
+            <div id="caption-size-row" class="caption-size-row hidden">
+              <div class="size-stepper">
+                <button type="button" onclick="stepCaptionSize(-1)" aria-label="Decrease caption size">&minus;</button>
+                <input type="number" id="caption-size" value="15" min="8" max="60" step="1" inputmode="numeric" aria-label="Caption text size" />
+                <button type="button" onclick="stepCaptionSize(1)" aria-label="Increase caption size">+</button>
+              </div>
+            </div>
+          </div>
+          <textarea id="caption-text" class="hidden" rows="2" placeholder="Scan Me" maxlength="120"></textarea>
         </div>
-        <p class="tip caption-tip">Baked into PNG, JPG and PDF. SVG stays a plain code (no caption).</p>
+        <p class="tip caption-tip">Press <b>Enter</b> for a new line. Baked into PNG, JPG and PDF. SVG stays a plain code (no caption).</p>
 
         <div class="customize">
           <p class="customize-title">Customize colors, logo and style</p>
@@ -172,17 +181,17 @@
             <div class="field color-field">
               <label>QR color</label>
               <div class="color-swatch-wrap">
-                <input type="color" id="qr-color" value="#000000"
-                  oninput="document.getElementById('qr-color-hex').textContent=this.value" />
-                <span class="hex-label" id="qr-color-hex">#000000</span>
+                <input type="color" id="qr-color" value="#000000" aria-label="Pick QR color" />
+                <input type="text" class="hex-label" id="qr-color-hex" value="#000000"
+                  maxlength="7" spellcheck="false" inputmode="text" aria-label="QR color hex code" />
               </div>
             </div>
             <div class="field color-field">
               <label>Background</label>
               <div class="color-swatch-wrap">
-                <input type="color" id="qr-bg" value="#ffffff"
-                  oninput="document.getElementById('qr-bg-hex').textContent=this.value" />
-                <span class="hex-label" id="qr-bg-hex">#ffffff</span>
+                <input type="color" id="qr-bg" value="#ffffff" aria-label="Pick background color" />
+                <input type="text" class="hex-label" id="qr-bg-hex" value="#ffffff"
+                  maxlength="7" spellcheck="false" inputmode="text" aria-label="Background hex code" />
               </div>
             </div>
           </div>

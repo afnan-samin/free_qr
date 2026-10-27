@@ -80,7 +80,6 @@ const qrCode = new QRCodeStyling({
   imageOptions: { crossOrigin: "anonymous", margin: 6, imageSize: 0.4 }
 });
 qrCode.append($("qr-preview"));
-qrCode._exportSize = 512;
 
 /* ---------- QR types ---------- */
 function setType(t) {
@@ -101,15 +100,20 @@ function isPasteableField(el) {
   return !!(el && /^(INPUT|TEXTAREA)$/.test(el.tagName) &&
     !["checkbox", "color", "file", "range"].includes(el.type));
 }
+// The Paste button belongs to the details forms — never the caption box,
+// even when the caption field happens to be focused.
+function isDetailsField(el) {
+  return isPasteableField(el) && !!el.closest &&
+    !!el.closest("#form-text, #form-wifi, #form-vcard");
+}
 function getPasteTarget() {
   const active = document.activeElement;
-  if (isPasteableField(active) && active.closest && active.closest("#panel-single")) {
+  if (isDetailsField(active)) {
     return active;
   }
   // Clicking the Paste button takes focus off the field, so remember the
   // field the user was last typing in (as long as it's still visible).
-  if (isPasteableField(lastDetailsField) && lastDetailsField.offsetParent !== null &&
-      lastDetailsField.closest("#panel-single")) {
+  if (isDetailsField(lastDetailsField) && lastDetailsField.offsetParent !== null) {
     return lastDetailsField;
   }
   const form = $("form-" + qrType);
@@ -125,7 +129,7 @@ function insertAtCursor(el, text) {
   try { el.selectionStart = el.selectionEnd = pos; } catch { /* ignore */ }
   el.focus();
   el.dispatchEvent(new Event("input", { bubbles: true }));
-  if (el.id === "qr-text") autoGrow(el);
+  if (el.id === "qr-text" || el.id === "caption-text") autoGrow(el);
 }
 // Chrome cannot remember clipboard-read permission for file:// pages, so it
 // re-prompts on every read. Only use the API on a real hosted origin; on
@@ -257,6 +261,26 @@ function buildPayload() {
 }
 
 /* ---------- generate ---------- */
+function getQROptions(size) {
+  const color = $("qr-color").value;
+  const bg = $("qr-bg").value;
+  // Keep the quiet zone and logo gap proportional to the output size instead
+  // of shrinking to a few pixels on a 4K download.
+  const scale = size / 300;
+  return {
+    width: size, height: size, type: "canvas",
+    data: currentPayload,
+    image: logoDataUrl || "",
+    margin: Math.round(10 * scale),
+    qrOptions: { errorCorrectionLevel: "H" },
+    dotsOptions: { color, type: $("qr-style").value },
+    cornersSquareOptions: { color, type: "square" },
+    cornersDotOptions: { color, type: "square" },
+    backgroundOptions: { color: bg },
+    imageOptions: { crossOrigin: "anonymous", margin: Math.round(6 * scale), imageSize: 0.4 }
+  };
+}
+
 function generateQR(silent) {
   updateCaptionPreview();
   const built = buildPayload();
@@ -268,20 +292,11 @@ function generateQR(silent) {
   updateLinkPreview(currentPayload);
   const color = $("qr-color").value;
   const bg = $("qr-bg").value;
-  const style = $("qr-style").value;
   if (color.toLowerCase() === bg.toLowerCase()) {
     if (!silent) notify("QR color and background are the same — it won't scan!", "error");
     return false;
   }
-  qrCode.update({
-    data: currentPayload, width: 300, height: 300,
-    image: logoDataUrl || "",
-    dotsOptions: { color, type: style },
-    cornersSquareOptions: { color },
-    cornersDotOptions: { color },
-    backgroundOptions: { color: bg }
-  });
-  qrCode._exportSize = parseInt($("qr-size").value, 10);
+  qrCode.update(getQROptions(300));
   $("qr-payload").textContent = currentPayload.length > 90
     ? currentPayload.slice(0, 90) + "…" : currentPayload;
   if (!silent) {
@@ -319,19 +334,17 @@ function copyLinkPreview() {
 // live preview (debounced)
 let _t;
 document.querySelectorAll("#panel-single input, #panel-single textarea, #panel-single select").forEach(el => {
-  if (isPasteableField(el)) {
+  if (isDetailsField(el)) {
     el.addEventListener("focus", () => { lastDetailsField = el; });
   }
   el.addEventListener("input", () => {
     hidePasteHint();
-    if (el.id === "qr-text") autoGrow(el);
-    if (el.id === "qr-logo" || el.id === "qr-size") return;
+    if (el.id === "qr-text" || el.id === "caption-text") autoGrow(el);
+    if (el.id === "qr-logo" || el.id === "qr-size" ||
+        el.id === "qr-color-hex" || el.id === "qr-bg-hex") return;
     clearTimeout(_t);
     _t = setTimeout(() => generateQR(true), 450);
   });
-});
-$("qr-size").addEventListener("change", () => {
-  qrCode._exportSize = parseInt($("qr-size").value, 10);
 });
 
 // clear-button visibility follows content
@@ -458,8 +471,8 @@ function loadBrandPreset() {
   $("qr-color").value = p.color || "#000000";
   $("qr-bg").value = p.bg || "#ffffff";
   $("qr-style").value = p.style || "classy-rounded";
-  $("qr-color-hex").textContent = $("qr-color").value;
-  $("qr-bg-hex").textContent = $("qr-bg").value;
+  $("qr-color-hex").value = $("qr-color").value;
+  $("qr-bg-hex").value = $("qr-bg").value;
   if (p.logo) {
     logoDataUrl = p.logo;
     $("btn-remove-logo").classList.remove("hidden");
@@ -475,9 +488,25 @@ function initBrandPresetUI() {
 }
 
 /* ---------- optional caption baked under the QR (PNG/JPG/PDF only) ---------- */
+const CAPTION_SIZE_MIN = 8;
+const CAPTION_SIZE_MAX = 60;
+const CAPTION_SIZE_DEFAULT = 15;
+
 function getCaptionText() {
   if (!$("caption-toggle").checked) return "";
   return $("caption-text").value.trim() || "Scan Me";
+}
+
+function getCaptionSize() {
+  const v = parseInt($("caption-size").value, 10);
+  if (isNaN(v)) return CAPTION_SIZE_DEFAULT;
+  return Math.min(CAPTION_SIZE_MAX, Math.max(CAPTION_SIZE_MIN, v));
+}
+
+function stepCaptionSize(delta) {
+  const input = $("caption-size");
+  input.value = Math.min(CAPTION_SIZE_MAX, Math.max(CAPTION_SIZE_MIN, getCaptionSize() + delta));
+  updateCaptionPreview();
 }
 
 // Mirrors the downloaded caption in the live preview, right under the QR.
@@ -491,18 +520,70 @@ function updateCaptionPreview() {
     return;
   }
   el.textContent = text;
+  el.style.fontSize = getCaptionSize() + "px";
   el.style.background = $("qr-bg").value || "#ffffff";
   el.style.color = $("qr-color").value || "#000000";
   el.classList.remove("hidden");
 }
 
 $("caption-toggle").addEventListener("change", () => {
-  $("caption-text").classList.toggle("hidden", !$("caption-toggle").checked);
+  const on = $("caption-toggle").checked;
+  $("caption-text").classList.toggle("hidden", !on);
+  $("caption-size-row").classList.toggle("hidden", !on);
+  if (on) { autoGrow($("caption-text")); $("caption-text").focus(); }
   updateCaptionPreview();
 });
 $("caption-text").addEventListener("input", updateCaptionPreview);
-$("qr-color").addEventListener("input", updateCaptionPreview);
-$("qr-bg").addEventListener("input", updateCaptionPreview);
+$("caption-size").addEventListener("input", updateCaptionPreview);
+$("caption-size").addEventListener("change", () => {
+  $("caption-size").value = getCaptionSize();
+  updateCaptionPreview();
+});
+
+function normalizeHex(raw) {
+  let v = (raw || "").trim().toLowerCase();
+  if (!v.startsWith("#")) v = "#" + v;
+  if (/^#[0-9a-f]{3}$/.test(v)) {
+    return "#" + v.slice(1).split("").map((c) => c + c).join("");
+  }
+  return /^#[0-9a-f]{6}$/.test(v) ? v : "";
+}
+function applyHexInput(hexId, pickerId) {
+  const input = $(hexId);
+  const picker = $(pickerId);
+  const hex = normalizeHex(input.value);
+  if (!hex || hex === picker.value) return;
+  picker.value = hex;
+  updateCaptionPreview();
+  clearTimeout(_t);
+  _t = setTimeout(() => generateQR(true), 400);
+}
+function commitHexInput(hexId, pickerId) {
+  const input = $(hexId);
+  const picker = $(pickerId);
+  const hex = normalizeHex(input.value);
+  if (!hex) { input.value = picker.value; return; }
+  input.value = hex;
+  if (hex !== picker.value) {
+    picker.value = hex;
+    updateCaptionPreview();
+    generateQR(true);
+  }
+}
+
+$("qr-color").addEventListener("input", () => {
+  $("qr-color-hex").value = $("qr-color").value;
+  updateCaptionPreview();
+});
+$("qr-bg").addEventListener("input", () => {
+  $("qr-bg-hex").value = $("qr-bg").value;
+  updateCaptionPreview();
+});
+[["qr-color-hex", "qr-color"], ["qr-bg-hex", "qr-bg"]].forEach(([hexId, pickerId]) => {
+  $(hexId).addEventListener("input", () => applyHexInput(hexId, pickerId));
+  $(hexId).addEventListener("change", () => commitHexInput(hexId, pickerId));
+  $(hexId).addEventListener("blur", () => commitHexInput(hexId, pickerId));
+});
 
 // Splits the caption into lines that fit inside maxWidth, breaking long
 // words too — so an entry like "[Chemistry 2nd Paper Final 2_Answer Sheet]"
@@ -540,10 +621,10 @@ function wrapCaptionLines(ctx, text, maxWidth) {
 function drawCaptionedCanvas(img, size, captionText) {
   const canvas = document.createElement("canvas");
   const measureCtx = canvas.getContext("2d");
-  const padX = Math.round(size * 0.06);
-  const fontSize = Math.round(size * 0.05);
+  const padX = Math.round(size * 0.03);
+  const fontSize = Math.max(6, Math.round(size * (getCaptionSize() / 300)));
   const lineHeight = Math.round(fontSize * 1.32);
-  const verticalPad = Math.round(size * 0.045);
+  const verticalPad = Math.round(size * 0.0225);
   const maxWidth = size - padX * 2;
   const font = "600 " + fontSize + "px Inter, sans-serif";
 
@@ -571,15 +652,18 @@ function drawCaptionedCanvas(img, size, captionText) {
 /* ---------- downloads ---------- */
 async function downloadQR(ext) {
   if (!generateQR(true)) { notify("Please make a valid QR code first", "error"); return; }
-  const size = qrCode._exportSize || 512;
+  const size = parseInt($("qr-size").value, 10) || 512;
   const name = "qr-" + Date.now();
   const wantCaption = $("caption-toggle").checked;
   const captionText = wantCaption ? ($("caption-text").value.trim() || "Scan Me") : "";
+  // Render at the chosen output size so large downloads stay genuinely sharp
+  // instead of upscaling the 300px preview.
+  const exportQR = new QRCodeStyling(getQROptions(size));
 
   try {
     if (ext === "svg") {
       // SVG stays a plain vector code — captions aren't baked in for this format.
-      await qrCode.download({ name, extension: "svg" });
+      await exportQR.download({ name, extension: "svg" });
       const b = buildPayload();
       if (!b.error) saveHistory(b.label, currentPayload);
       notify("SVG downloaded", "success");
@@ -587,7 +671,7 @@ async function downloadQR(ext) {
     }
 
     const rawExt = ext === "pdf" ? "png" : ext;
-    const blob = await qrCode.getRawData(rawExt);
+    const blob = await exportQR.getRawData(rawExt);
     const url = URL.createObjectURL(blob);
     const img = new Image();
     img.src = url;

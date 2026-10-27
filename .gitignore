@@ -1,0 +1,7 @@
+
+# impeccable skill (local only)
+.agents/
+.claude/
+agent/
+skills-lock.json
+

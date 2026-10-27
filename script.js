@@ -21,6 +21,12 @@ const NOTIF_DURATION = 2500;
 
 function notify(message, type) {
   const stack = $("notif-stack");
+  // Keep at most 3 toasts visible: drop the oldest when a 4th arrives.
+  while (stack.children.length >= 3) {
+    const oldest = stack.lastElementChild;
+    if (!oldest) break;
+    oldest.remove();
+  }
   const el = document.createElement("div");
   el.className = "notif notif-" + (type || "info");
   el.innerHTML =
@@ -117,8 +123,13 @@ function getPasteTarget() {
     return lastDetailsField;
   }
   const form = $("form-" + qrType);
-  const el = form && form.querySelector('input[type="text"], input[type="tel"], input[type="email"], textarea');
-  return el || $("qr-text");
+  const candidates = form
+    ? form.querySelectorAll('input[type="text"], input[type="tel"], input[type="email"], textarea')
+    : [];
+  for (const c of candidates) {
+    if (c.offsetParent !== null) return c;
+  }
+  return null;
 }
 function insertAtCursor(el, text) {
   if (!el) return;
@@ -171,6 +182,7 @@ function manualPaste(target, message) {
   showPasteHint(message || "Your browser blocked clipboard access — press Ctrl+V to paste here.");
 }
 function pasteDetails() {
+  _clipboardDenied = false;
   const target = getPasteTarget();
   if (!target) return;
   if (!canReadClipboard()) {
@@ -206,7 +218,7 @@ function pasteDetails() {
 }
 
 function escWifi(s) {
-  return (s || "").replace(/([\\;,:"])/g, "\\$1");
+  return (s || "").replace(/[\\r\\n]+/g, " ").replace(/([\\;,:"])/g, "\\$1");
 }
 
 $("wifi-enc").addEventListener("change", () => {
@@ -239,12 +251,13 @@ function buildPayload() {
     return { data: `WIFI:T:${enc};S:${escWifi(ssid)};P:${escWifi(pass)};H:${hidden};;`, label: "WiFi: " + ssid };
   }
   if (qrType === "vcard") {
-    const name = $("vc-name").value.trim();
-    const phone = $("vc-phone").value.trim();
-    const email = $("vc-email").value.trim();
-    const org = $("vc-org").value.trim();
-    const url = $("vc-url").value.trim();
-    const addr = $("vc-addr").value.trim();
+    const clean = (s) => s.trim().replace(/[\\r\\n]+/g, " ");
+    const name = clean($("vc-name").value);
+    const phone = clean($("vc-phone").value);
+    const email = clean($("vc-email").value);
+    const org = clean($("vc-org").value);
+    const url = clean($("vc-url").value);
+    const addr = clean($("vc-addr").value);
     if (!name) return { error: "Please enter a name for the contact card" };
     if (!phone) return { error: "Please enter a phone number for the contact card" };
     const v = ["BEGIN:VCARD", "VERSION:3.0", `FN:${name}`, `TEL;TYPE=CELL:${phone}`];
@@ -372,7 +385,7 @@ function verifyScanFromPreview() {
     } catch (e) {
       console.error("Scan verification skipped:", e);
     }
-  }, 150);
+  }, 300);
 }
 
 /* ---------- logo (any ratio accepted, auto-fit to a square, up to 2MB) ---------- */
@@ -882,14 +895,18 @@ async function generateBulkSheet() {
 
 /* ---------- history (no cap — keeps everything this browser generates) ---------- */
 function getHistory() {
-  try { return JSON.parse(localStorage.getItem(HIST_KEY) || "[]"); }
+  try {
+    const parsed = JSON.parse(localStorage.getItem(HIST_KEY) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  }
   catch { return []; }
 }
 function saveHistory(label, data) {
   try {
-    let h = getHistory().filter(x => x.data !== data);
-    h.unshift({ label, data, time: Date.now(), type: qrType });
-    localStorage.setItem(HIST_KEY, JSON.stringify(h));
+  let h = getHistory().filter(x => x.data !== data);
+  h.unshift({ label, data, time: Date.now(), type: qrType });
+  if (h.length > 50) h.length = 50;
+  localStorage.setItem(HIST_KEY, JSON.stringify(h));
     $("hist-badge").textContent = h.length;
   } catch { /* private mode / storage full */ }
 }
@@ -917,21 +934,21 @@ function renderHistory() {
         autoGrow($("qr-text"));
       }
       currentPayload = x.data;
-      qrCode.update({ data: currentPayload });
+      qrCode.update(getQROptions(300));
       $("qr-payload").textContent = x.data.slice(0, 90);
       switchTab("single");
       notify("Loaded from history", "success");
     };
     d.querySelector(".del").onclick = () => {
       const nh = getHistory(); nh.splice(i, 1);
-      localStorage.setItem(HIST_KEY, JSON.stringify(nh));
+      try { localStorage.setItem(HIST_KEY, JSON.stringify(nh)); } catch { /* private mode / storage full */ }
       renderHistory();
     };
     box.appendChild(d);
   });
 }
 function clearHistory() {
-  localStorage.removeItem(HIST_KEY);
+  try { localStorage.removeItem(HIST_KEY); } catch { /* private mode */ }
   renderHistory();
   notify("History cleared", "success");
 }
